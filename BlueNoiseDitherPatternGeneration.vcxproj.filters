@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="blur.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="simple_fft\check_fft.hpp">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\copy_array.hpp">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\error_handling.hpp">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\fft.h">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\fft.hpp">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\fft_impl.hpp">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="simple_fft\fft_settings.h">
+      <Filter>simple_fft</Filter>
+    </ClInclude>
+    <ClInclude Include="stb\stb_image_write.h">
+      <Filter>stb</Filter>
+    </ClInclude>
+    <ClInclude Include="misc.h" />
+    <ClInclude Include="dft.h" />
+    <ClInclude Include="histogram.h" />
+    <ClInclude Include="whitenoise.h" />
+    <ClInclude Include="blur.h" />
+    <ClInclude Include="convert.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="simple_fft">
+      <UniqueIdentifier>{622f361a-3939-48b3-b6eb-56af641629f6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="stb">
+      <UniqueIdentifier>{caed931e-775e-46e0-bfa5-c790be5130b8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
