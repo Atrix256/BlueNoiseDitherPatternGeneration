@@ -4,9 +4,12 @@
 
 inline std::mt19937& RNG()
 {
+
     static std::random_device rd;
-    static std::seed_seq fullSeed{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() };
+    //static std::seed_seq fullSeed{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() };
+    static std::seed_seq fullSeed{ unsigned(783104853), unsigned(4213684301), unsigned(3526061164), unsigned(614346169), unsigned(478811579), unsigned(2044310268), unsigned(3671768129), unsigned(206439072) };
     static std::mt19937 rng(fullSeed);
+
     return rng;
 }
 

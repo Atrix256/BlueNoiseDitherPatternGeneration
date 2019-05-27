@@ -39,6 +39,17 @@ int main(int argc, char** argv)
         stbi_write_png("out/blueHPF.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
     }
 
+    // generate red noise by repeated low pass filtering white noise and fixing up the histogram
+    {
+        std::vector<uint8_t> redNoise;
+        GenerateBN_HPF(redNoise, c_width, 5, 1.0f, true);
+        stbi_write_png("out/redHPF.png", int(c_width), int(c_width), 1, redNoise.data(), 0);
+        WriteHistogram(redNoise, "out/redHPF.histogram.csv");
+        std::vector<uint8_t> redNoiseDFT;
+        DFT(redNoise, redNoiseDFT, c_width);
+        stbi_write_png("out/redHPF.DFT.png", int(c_width), int(c_width), 1, redNoiseDFT.data(), 0);
+    }
+
     return 0;
 }
 

@@ -41,7 +41,7 @@ static void NormalizeHistogram(std::vector<float>& image, size_t width)
     }
 }
 
-void GenerateBN_HPF(std::vector<uint8_t>& blueNoise, size_t width, size_t numPasses, float sigma)
+void GenerateBN_HPF(std::vector<uint8_t>& blueNoise, size_t width, size_t numPasses, float sigma, bool makeRed)
 {
     // first make white noise
     std::vector<uint8_t> pixels;
@@ -55,10 +55,20 @@ void GenerateBN_HPF(std::vector<uint8_t>& blueNoise, size_t width, size_t numPas
     std::vector<float> pixelsFloatLowPassed;
     for (size_t index = 0; index < numPasses; ++index)
     {
-        // a blur is a low pass filter, and a high pass filter is the signal minus the low pass filtered signa.
         GaussianBlur(pixelsFloat, pixelsFloatLowPassed, width, sigma);
-        for (size_t pixelIndex = 0, pixelCount = pixelsFloat.size(); pixelIndex < pixelCount; ++pixelIndex)
-            pixelsFloat[pixelIndex] -= pixelsFloatLowPassed[pixelIndex];
+
+        if (!makeRed)
+        {
+            // a blur is a low pass filter, and a high pass filter is the signal minus the low pass filtered signa.
+            for (size_t pixelIndex = 0, pixelCount = pixelsFloat.size(); pixelIndex < pixelCount; ++pixelIndex)
+                pixelsFloat[pixelIndex] -= pixelsFloatLowPassed[pixelIndex];
+        }
+        else
+        {
+            // to make red noise, just use the low pass filter data
+            for (size_t pixelIndex = 0, pixelCount = pixelsFloat.size(); pixelIndex < pixelCount; ++pixelIndex)
+                pixelsFloat[pixelIndex] = pixelsFloatLowPassed[pixelIndex];
+        }
 
         // Do a histogram fixup
         NormalizeHistogram(pixelsFloat, width);
