@@ -3,6 +3,7 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="blur.cpp" />
+    <ClCompile Include="generatebn_hpf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simple_fft\check_fft.hpp">
@@ -35,6 +36,7 @@
     <ClInclude Include="whitenoise.h" />
     <ClInclude Include="blur.h" />
     <ClInclude Include="convert.h" />
+    <ClInclude Include="generatebn_hpf.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

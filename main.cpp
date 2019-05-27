@@ -4,9 +4,8 @@
 #include <stdint.h>
 #include <vector>
 
-#include "blur.h"
-#include "convert.h"
 #include "dft.h"
+#include "generatebn_hpf.h"
 #include "histogram.h"
 #include "misc.h"
 #include "whitenoise.h"
@@ -16,39 +15,29 @@
 
 int main(int argc, char** argv)
 {
-    std::vector<uint8_t> pixels;
-    MakeWhiteNoise(pixels, 256, 256);
+    static size_t c_width = 256;
 
-    stbi_write_png("out/white.png", 256, 256, 1, pixels.data(), 0);
-    WriteHistogram(pixels, "out/white.csv");
-   
-    std::vector<float> pixelsFloat;
-    pixelsFloat.resize(256 * 256);
-    for (size_t index = 0, count = 256 * 256; index < count; ++index)
-        pixelsFloat[index] = ToFloat(pixels[index]);
+    // generate some white noise
+    {
+        std::vector<uint8_t> whiteNoise;
+        MakeWhiteNoise(whiteNoise, c_width);
+        stbi_write_png("out/white.png", int(c_width), int(c_width), 1, whiteNoise.data(), 0);
+        WriteHistogram(whiteNoise, "out/white.histogram.csv");
+        std::vector<uint8_t> whiteNoiseDFT;
+        DFT(whiteNoise, whiteNoiseDFT, c_width);
+        stbi_write_png("out/white.DFT.png", int(c_width), int(c_width), 1, whiteNoiseDFT.data(), 0);
+    }
 
-    // TODO: calculate size from sigma etc like the other code does
-    std::vector<float> pixelsFloatBlurred;
-    GaussianBlur(pixelsFloat, pixelsFloatBlurred, 256, 2.1f, 2.1f, 16, 16);
-
-    std::vector<uint8_t> pixelsBlurred;
-    pixelsBlurred.resize(256 * 256);
-    for (size_t index = 0, count = 256 * 256; index < count; ++index)
-        pixelsBlurred[index] = FromFloat<uint8_t>(pixelsFloatBlurred[index]);
-
-    stbi_write_png("out/whiteBlurred.png", 256, 256, 1, pixelsBlurred.data(), 0);
-    WriteHistogram(pixelsBlurred, "out/whiteBlurred.csv");
-
-    // TODO: do the repeated blurring / subtraction (HPF) and histogram fix up.  Blur.h exists. need to be able to convert these pixels to float using convert.h functionality
-
-    std::vector<uint8_t> pixelsDFT;
-    DFT(pixels, pixelsDFT, 256);
-    stbi_write_png("out/white_DFT.png", 256, 256, 1, pixelsDFT.data(), 0);
-    DFT(pixelsBlurred, pixelsDFT, 256);
-    stbi_write_png("out/whiteBlurred_DFT.png", 256, 256, 1, pixelsDFT.data(), 0);
-
-    WriteHistogram(pixels, "out/white.csv");
-    WriteHistogram(pixelsBlurred, "out/whiteBlurred.csv");
+    // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
+    {
+        std::vector<uint8_t> blueNoise;
+        GenerateBN_HPF(blueNoise, c_width);
+        stbi_write_png("out/blueHPF.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
+        WriteHistogram(blueNoise, "out/blueHPF.histogram.csv");
+        std::vector<uint8_t> blueNoiseDFT;
+        DFT(blueNoise, blueNoiseDFT, c_width);
+        stbi_write_png("out/blueHPF.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+    }
 
     return 0;
 }
@@ -57,7 +46,6 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
-* sRGB conversion? i think not, but think through that.
 * The DFT function is having some problem with DC being huge, so i zero it out for now
 
 ================== PLANS ==================
@@ -65,7 +53,7 @@ int main(int argc, char** argv)
 Generation Methods
 1) Swap from that paper
 2) Leonard's swap
-3) high pass filter
+3) high pass filter   - DONE
 4) void and cluster
 
 Do speed testing

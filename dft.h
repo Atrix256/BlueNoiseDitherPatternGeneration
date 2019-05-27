@@ -3,6 +3,9 @@
 #include "simple_fft/fft_settings.h"
 #include "simple_fft/fft.h"
 
+#include "misc.h"
+
+#include <algorithm>
 #include <vector>
 
 struct ComplexImage2D

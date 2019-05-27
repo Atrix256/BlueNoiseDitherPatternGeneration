@@ -1,5 +1,16 @@
 #include "blur.h"
 
+const float     c_blurThresholdPercent = 0.005f; // lower numbers give higher quality results, but take longer. This is 0.5%
+
+static inline int PixelsNeededForSigma(float sigma)
+{
+    // returns the number of pixels needed to represent a gaussian kernal that has values
+    // down to the threshold amount.  A gaussian function technically has values everywhere
+    // on the image, but the threshold lets us cut it off where the pixels contribute to
+    // only small amounts that aren't as noticeable.
+    return (int(floor(1.0f + 2.0f * sqrtf(-2.0f * sigma * sigma * log(c_blurThresholdPercent)))) + 1) | 1;
+}
+
 static inline float Gaussian(float sigma, float x)
 {
     return expf(-(x*x) / (2.0f * sigma*sigma));
@@ -56,8 +67,10 @@ static inline const float* GetPixelWrapAround(const std::vector<float>& image, s
     return &image[(y * width) + x];
 }
 
-void GaussianBlur(const std::vector<float>& srcImage, std::vector<float> &destImage, size_t width, float xblursigma, float yblursigma, unsigned int xblursize, unsigned int yblursize)
+void GaussianBlur(const std::vector<float>& srcImage, std::vector<float> &destImage, size_t width, float blurSigma)
 {
+    int blurSize = PixelsNeededForSigma(blurSigma);
+
     // allocate space for copying the image for destImage and tmpImage
     destImage.resize(width*width, 0.0f);
 
@@ -66,7 +79,7 @@ void GaussianBlur(const std::vector<float>& srcImage, std::vector<float> &destIm
 
     // horizontal blur from srcImage into tmpImage
     {
-        auto row = GaussianKernelIntegrals(xblursigma, xblursize);
+        auto row = GaussianKernelIntegrals(blurSigma, blurSize);
 
         int startOffset = -1 * int(row.size() / 2);
 
@@ -89,7 +102,7 @@ void GaussianBlur(const std::vector<float>& srcImage, std::vector<float> &destIm
 
     // vertical blur from tmpImage into destImage
     {
-        auto row = GaussianKernelIntegrals(yblursigma, yblursize);
+        auto row = GaussianKernelIntegrals(blurSigma, blurSize);
 
         int startOffset = -1 * int(row.size() / 2);
 
