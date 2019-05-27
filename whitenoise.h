@@ -1,6 +1,7 @@
 #pragma once
 
 #include <random>
+#include "misc.h"
 
 inline std::mt19937& RNG()
 {
@@ -9,7 +10,6 @@ inline std::mt19937& RNG()
     //static std::seed_seq fullSeed{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() };
     static std::seed_seq fullSeed{ unsigned(783104853), unsigned(4213684301), unsigned(3526061164), unsigned(614346169), unsigned(478811579), unsigned(2044310268), unsigned(3671768129), unsigned(206439072) };
     static std::mt19937 rng(fullSeed);
-
     return rng;
 }
 
@@ -43,6 +43,16 @@ inline void MakeWhiteNoise(std::vector<T>& pixels, size_t width)
         value = Clamp(0.0f, float(std::numeric_limits<T>::max()), value);
         pixels[index] = T(value);
     }
+
+    std::shuffle(pixels.begin(), pixels.end(), RNG());
+}
+
+inline void MakeWhiteNoiseFloat(std::vector<float>& pixels, size_t width)
+{
+    pixels.resize(width*width);
+
+    for (size_t index = 0, count = width * width; index < count; ++index)
+        pixels[index] = float(index) / float(count - 1);
 
     std::shuffle(pixels.begin(), pixels.end(), RNG());
 }

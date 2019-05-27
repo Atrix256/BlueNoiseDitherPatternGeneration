@@ -6,6 +6,7 @@
 
 #include "dft.h"
 #include "generatebn_hpf.h"
+#include "generatebn_swap.h"
 #include "histogram.h"
 #include "misc.h"
 #include "whitenoise.h"
@@ -15,8 +16,9 @@
 
 int main(int argc, char** argv)
 {
-    static size_t c_width = 256;
+    static size_t c_width = 32;
 
+    /*
     // generate some white noise
     {
         std::vector<uint8_t> whiteNoise;
@@ -49,6 +51,18 @@ int main(int argc, char** argv)
         DFT(redNoise, redNoiseDFT, c_width);
         stbi_write_png("out/redHPF.DFT.png", int(c_width), int(c_width), 1, redNoiseDFT.data(), 0);
     }
+    */
+
+    // generate blue noise by swapping white noise pixels to make it more blue
+    {
+        std::vector<uint8_t> blueNoise;
+        GenerateBN_Swap(blueNoise, c_width);
+        stbi_write_png("out/blueSwap.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
+        WriteHistogram(blueNoise, "out/blueSwap.histogram.csv");
+        std::vector<uint8_t> blueNoiseDFT;
+        DFT(blueNoise, blueNoiseDFT, c_width);
+        stbi_write_png("out/blueSwap.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+    }
 
     return 0;
 }
@@ -77,6 +91,8 @@ Also do red noise?
 ? Can we use this to make N sheets of blue noise that are blue over space, and each individual pixel is also blue over time?
 
 Links:
+* repeated LPF: https://blog.demofox.org/2017/10/25/transmuting-white-noise-to-blue-red-green-purple/
+
 * swap paper: https://www.arnoldrenderer.com/research/dither_abstract.pdf
  * and an implementation: https://github.com/joshbainbridge/blue-noise-generator/blob/master/src/main.cpp
 

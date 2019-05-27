@@ -4,6 +4,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="blur.cpp" />
     <ClCompile Include="generatebn_hpf.cpp" />
+    <ClCompile Include="generatebn_swap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simple_fft\check_fft.hpp">
@@ -37,6 +38,7 @@
     <ClInclude Include="blur.h" />
     <ClInclude Include="convert.h" />
     <ClInclude Include="generatebn_hpf.h" />
+    <ClInclude Include="generatebn_swap.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

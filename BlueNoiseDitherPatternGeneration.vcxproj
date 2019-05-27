@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClCompile Include="blur.cpp" />
     <ClCompile Include="generatebn_hpf.cpp" />
+    <ClCompile Include="generatebn_swap.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -124,6 +125,7 @@
     <ClInclude Include="convert.h" />
     <ClInclude Include="dft.h" />
     <ClInclude Include="generatebn_hpf.h" />
+    <ClInclude Include="generatebn_swap.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="misc.h" />
     <ClInclude Include="simple_fft\check_fft.hpp" />
