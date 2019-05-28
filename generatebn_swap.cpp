@@ -85,11 +85,8 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     return energySum;
 }
 
-void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width)
+void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries)
 {
-    // TODO: make a function parameter
-    static const size_t c_swapTries = 4096;
-
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
 
     // make white noisen and calculate the energy
@@ -101,9 +98,9 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width)
     std::vector<float> pixelsCopy = pixelsFloat;
 
     // do swaps to make it more blue
-    for (size_t swapTryCount = 0; swapTryCount < c_swapTries; ++swapTryCount)
+    for (size_t swapTryCount = 0; swapTryCount < swapTries; ++swapTryCount)
     {
-        printf("\r%zu / %zu", swapTryCount, c_swapTries);
+        printf("\r%zu / %zu", swapTryCount, swapTries);
 
         // swap two random pixels in the pixels copy
         size_t pixelA = dist(RNG());
