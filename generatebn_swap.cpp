@@ -61,7 +61,7 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
                         float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
 
                         float d = 1.0f;
-                        float rightTerm = (powf((qvalue - pvalue) * (qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+                        float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
 
                         energies[threadIndex] += exp(-leftTerm - rightTerm);
                         // TODO: when supporting multiple channel blue noise, right term needs treatment
@@ -85,14 +85,24 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     return energySum;
 }
 
-void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries)
+void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName)
 {
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
+
+    FILE* file = nullptr;
+    if(csvFileName)
+        fopen_s(&file, csvFileName, "w+t");
 
     // make white noisen and calculate the energy
     std::vector<float> pixelsFloat;
     MakeWhiteNoiseFloat(pixelsFloat, width);
     float pixelsEnergy = CalculateEnergy(pixelsFloat, width);
+
+    if (file)
+    {
+        fprintf(file, "\"Step\",\"Energy\"\n");
+        fprintf(file, "\"-1\",\"%f\"\n", pixelsEnergy);
+    }
 
     // make a copy of the white noise
     std::vector<float> pixelsCopy = pixelsFloat;
@@ -120,7 +130,13 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         {
             std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
         }
+
+        if (file)
+            fprintf(file, "\"%zu\",\"%f\"\n", swapTryCount, pixelsEnergy);
     }
+
+    if (file)
+        fclose(file);
 
     FromFloat(pixelsFloat, pixels);
 }

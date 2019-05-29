@@ -16,7 +16,7 @@
 
 int main(int argc, char** argv)
 {
-    static size_t c_width = 32;
+    static size_t c_width = 16;
 
     /*
     // generate some white noise
@@ -56,7 +56,7 @@ int main(int argc, char** argv)
     // generate blue noise by swapping white noise pixels to make it more blue
     {
         std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, 4096);
+        GenerateBN_Swap(blueNoise, c_width, 4096, "out/blueSwap.data.csv");
         stbi_write_png("out/blueSwap.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
         WriteHistogram(blueNoise, "out/blueSwap.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
@@ -71,7 +71,9 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
+* could try swapping multiple at once til it plateaus then decrease it.
 * make images and DFT images be put together as one image
+? does the thresholding constraint make blue noise that's worse for the non thresholding case?
 * The DFT function is having some problem with DC being huge, so i zero it out for now
 
 ================== PLANS ==================
@@ -97,4 +99,9 @@ Links:
 * swap paper: https://www.arnoldrenderer.com/research/dither_abstract.pdf
  * and an implementation: https://github.com/joshbainbridge/blue-noise-generator/blob/master/src/main.cpp
 
+
+ Notes:
+ * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
+  * 1st is for like AO ray perterbation & ray march offsets
+  * 2nd is for stochastic alpha and dithering before quantization
 */
