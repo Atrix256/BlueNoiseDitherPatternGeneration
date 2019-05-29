@@ -16,11 +16,12 @@
 
 int main(int argc, char** argv)
 {
-    static size_t c_width = 16;
-
-    /*
     // generate some white noise
     {
+        static size_t c_width = 256;
+
+        printf("making white noise...\n");
+
         std::vector<uint8_t> whiteNoise;
         MakeWhiteNoise(whiteNoise, c_width);
         stbi_write_png("out/white.png", int(c_width), int(c_width), 1, whiteNoise.data(), 0);
@@ -28,10 +29,16 @@ int main(int argc, char** argv)
         std::vector<uint8_t> whiteNoiseDFT;
         DFT(whiteNoise, whiteNoiseDFT, c_width);
         stbi_write_png("out/white.DFT.png", int(c_width), int(c_width), 1, whiteNoiseDFT.data(), 0);
+
+        printf("\n");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
     {
+        static size_t c_width = 256;
+
+        printf("making blue noise by high pass filtering white noise...\n");
+
         std::vector<uint8_t> blueNoise;
         GenerateBN_HPF(blueNoise, c_width);
         stbi_write_png("out/blueHPF.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
@@ -39,10 +46,16 @@ int main(int argc, char** argv)
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
         stbi_write_png("out/blueHPF.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+
+        printf("\n");
     }
 
     // generate red noise by repeated low pass filtering white noise and fixing up the histogram
     {
+        static size_t c_width = 256;
+
+        printf("making red noise by low pass filtering white noise...\n");
+
         std::vector<uint8_t> redNoise;
         GenerateBN_HPF(redNoise, c_width, 5, 1.0f, true);
         stbi_write_png("out/redHPF.png", int(c_width), int(c_width), 1, redNoise.data(), 0);
@@ -50,18 +63,26 @@ int main(int argc, char** argv)
         std::vector<uint8_t> redNoiseDFT;
         DFT(redNoise, redNoiseDFT, c_width);
         stbi_write_png("out/redHPF.DFT.png", int(c_width), int(c_width), 1, redNoiseDFT.data(), 0);
+
+        printf("\n");
     }
-    */
 
     // generate blue noise by swapping white noise pixels to make it more blue
     {
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        printf("making blue noise by swapping white noise pixels...\n");
+
         std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, 4096, "out/blueSwap.data.csv");
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap.data.csv");
         stbi_write_png("out/blueSwap.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
         WriteHistogram(blueNoise, "out/blueSwap.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
         stbi_write_png("out/blueSwap.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+
+        printf("\n");
     }
 
     return 0;

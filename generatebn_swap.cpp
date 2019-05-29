@@ -63,7 +63,9 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
                         float d = 1.0f;
                         float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
 
-                        energies[threadIndex] += exp(-leftTerm - rightTerm);
+                        float energy = exp(-leftTerm - rightTerm);
+
+                        energies[threadIndex] += energy;
                         // TODO: when supporting multiple channel blue noise, right term needs treatment
                     }
 
@@ -140,6 +142,8 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
 
     FromFloat(pixelsFloat, pixels);
 }
+
+// TODO: could use SIMD for this... that other code does and it seems to run faster.
 
 // TODO: support multichannel blue noise?
 // TODO: profile and optimize
