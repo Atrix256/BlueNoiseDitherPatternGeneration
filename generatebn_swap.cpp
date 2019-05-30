@@ -19,10 +19,13 @@ inline float ToroidalDistanceSquared(float x1, float y1, float x2, float y2, flo
     return (dx * dx + dy * dy);
 }
 
+template <bool LIMITTO3SIGMA>
 float CalculateEnergy(const std::vector<float>& pixels, size_t width)
 {
     static const float c_sigma_i = 2.1f;
     static const float c_sigma_s = 1.0f;
+
+    static const int c_3Sigma_i = int(Clamp<size_t>(0, width / 2 - 1, size_t(ceil(c_sigma_i*3.0f))));
 
     size_t pixelCount = width * width;
 
@@ -47,26 +50,66 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
                     float py = float(p / width);
                     float pvalue = pixels[p];
 
-                    for (size_t q = 0; q < pixelCount; ++q)
+                    // limit it to +/- 3 standard deviations which is 99.7% of the data
+                    if (LIMITTO3SIGMA)
                     {
-                        if (p == q)
-                            continue;
+                        for (int oy = -c_3Sigma_i; oy <= c_3Sigma_i; ++oy)
+                        {
+                            float qy = py + float(oy);
 
-                        float qx = float(q % width);
-                        float qy = float(q / width);
-                        float qvalue = pixels[q];
+                            int qyi = int(qy);
+                            if (qyi < 0)
+                                qyi += int(width);
+                            qyi = qyi % width;
 
-                        float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
+                            for (int ox = -c_3Sigma_i; ox <= c_3Sigma_i; ++ox)
+                            {
+                                float qx = px + float(ox);
 
-                        float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
+                                int qxi = int(qx);
+                                if (qxi < 0)
+                                    qxi += int(width);
+                                qxi = qxi % width;
 
-                        float d = 1.0f;
-                        float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+                                float qvalue = pixels[qyi*width + qxi];
 
-                        float energy = exp(-leftTerm - rightTerm);
+                                float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
 
-                        energies[threadIndex] += energy;
-                        // TODO: when supporting multiple channel blue noise, right term needs treatment
+                                float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
+
+                                float d = 1.0f;
+                                float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+
+                                float energy = exp(-leftTerm - rightTerm);
+
+                                energies[threadIndex] += energy;
+                                // TODO: when supporting multiple channel blue noise, right term needs treatment
+                            }
+                        }
+                    }
+                    else
+                    {
+                        for (size_t q = 0; q < pixelCount; ++q)
+                        {
+                            if (p == q)
+                                continue;
+
+                            float qx = float(q % width);
+                            float qy = float(q / width);
+                            float qvalue = pixels[q];
+
+                            float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
+
+                            float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
+
+                            float d = 1.0f;
+                            float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+
+                            float energy = exp(-leftTerm - rightTerm);
+
+                            energies[threadIndex] += energy;
+                            // TODO: when supporting multiple channel blue noise, right term needs treatment
+                        }
                     }
 
                     // get next pixel to process
@@ -87,7 +130,7 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     return energySum;
 }
 
-void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName)
+void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName, bool limitTo3Sigma)
 {
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
 
@@ -99,7 +142,7 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
     std::mt19937 rng(GetRNGSeed());
     std::vector<float> pixelsFloat;
     MakeWhiteNoiseFloat(rng, pixelsFloat, width);
-    float pixelsEnergy = CalculateEnergy(pixelsFloat, width);
+    float pixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsFloat, width) : CalculateEnergy<false>(pixelsFloat, width);
 
     if (file)
     {
@@ -121,7 +164,7 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
 
         // calculate the new energy
-        float newPixelsEnergy = CalculateEnergy(pixelsCopy, width);
+        float newPixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsCopy, width) : CalculateEnergy<false>(pixelsCopy, width);
 
         // if the energy is better, take it, else reverse it
         if (newPixelsEnergy < pixelsEnergy)
@@ -142,13 +185,10 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         fclose(file);
 
     FromFloat(pixelsFloat, pixels);
+    printf("\n");
 }
 
-// TODO: could use SIMD for this... that other code does and it seems to run faster.
+// TODO: could use SIMD for this... that other code does and it seems to run faster. Or put it in notes that it could be improved that way.
 
 // TODO: support multichannel blue noise?
 // TODO: profile and optimize
-
-// TODO: other code did 4096 iterations for a 32x32 image
-// TODO: other code took higher energy values instead of lower ?!
-// TODO: is torroidal distance correct?

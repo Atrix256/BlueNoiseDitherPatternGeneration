@@ -1,0 +1,13 @@
+32x32 with 4096 samples. comparing the full energy calculationg, to limiting it to +- 1, 2 or 3 sigma distance of pixels (sigma = 2.1).
+
+We only care about relative values, so a flat line, regardless of it's value, is good for our diff.  2 and 3 sigma look fine :P
+
+Algorithm: loop through each pixel for p, but only consider q's within +/- sigma range.
+
+Timing:
+* Full    : 76 seconds
+* 3 sigma : 35 seconds
+* 2 sigma : 28 seconds
+* 1 sigma : 26 seconds
+
+Alternate algorithm: could try limiting p to only pixels within +/- sigma range of swapped values. not sure what to do on first swap, maybe pick two points at random? Wouldn't really be apples to apples then. maybe calc this score for both old and new textures? double the score calculations but it's a much smaller area. shrug.
