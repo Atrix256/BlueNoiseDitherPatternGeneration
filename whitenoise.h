@@ -2,33 +2,35 @@
 
 #include <random>
 #include "misc.h"
+#include "settings.h"
 
-inline std::mt19937& RNG()
+inline std::seed_seq& GetRNGSeed()
 {
-
-    static std::random_device rd;
-    //static std::seed_seq fullSeed{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() };
+#if DETERMINISTIC()
     static std::seed_seq fullSeed{ unsigned(783104853), unsigned(4213684301), unsigned(3526061164), unsigned(614346169), unsigned(478811579), unsigned(2044310268), unsigned(3671768129), unsigned(206439072) };
-    static std::mt19937 rng(fullSeed);
-    return rng;
+#else
+    static std::random_device rd;
+    static std::seed_seq fullSeed{ rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd() };
+#endif
+    return fullSeed;
 }
 
 template <typename T>
-inline T RandomValue()
+inline T RandomValue(std::mt19937& rng)
 {
     std::uniform_int_distribution<T> dist(0, std::numeric_limits<T>::max());
-    return dist(RNG());
+    return dist(rng);
 }
 
 template <>
-inline uint8_t RandomValue<uint8_t>()
+inline uint8_t RandomValue<uint8_t>(std::mt19937& rng)
 {
     std::uniform_int_distribution<uint16_t> dist(0, 255);  // can't be uint8_t :/
-    return uint8_t(dist(RNG()));
+    return uint8_t(dist(rng));
 }
 
 template <typename T>
-inline void MakeWhiteNoise(std::vector<T>& pixels, size_t width)
+inline void MakeWhiteNoise(std::mt19937& rng, std::vector<T>& pixels, size_t width)
 {
     pixels.resize(width*width);
 
@@ -44,15 +46,15 @@ inline void MakeWhiteNoise(std::vector<T>& pixels, size_t width)
         pixels[index] = T(value);
     }
 
-    std::shuffle(pixels.begin(), pixels.end(), RNG());
+    std::shuffle(pixels.begin(), pixels.end(), rng);
 }
 
-inline void MakeWhiteNoiseFloat(std::vector<float>& pixels, size_t width)
+inline void MakeWhiteNoiseFloat(std::mt19937& rng, std::vector<float>& pixels, size_t width)
 {
     pixels.resize(width*width);
 
     for (size_t index = 0, count = width * width; index < count; ++index)
         pixels[index] = float(index) / float(count - 1);
 
-    std::shuffle(pixels.begin(), pixels.end(), RNG());
+    std::shuffle(pixels.begin(), pixels.end(), rng);
 }

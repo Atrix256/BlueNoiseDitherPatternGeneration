@@ -22,8 +22,9 @@ int main(int argc, char** argv)
 
         printf("making white noise...\n");
 
+        std::mt19937 rng(GetRNGSeed());
         std::vector<uint8_t> whiteNoise;
-        MakeWhiteNoise(whiteNoise, c_width);
+        MakeWhiteNoise(rng, whiteNoise, c_width);
         stbi_write_png("out/white.png", int(c_width), int(c_width), 1, whiteNoise.data(), 0);
         WriteHistogram(whiteNoise, "out/white.histogram.csv");
         std::vector<uint8_t> whiteNoiseDFT;
@@ -91,6 +92,15 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
+
+For Swap Method...
+1) try going within 3 sigmas. make sure it's the same. should be faster
+2) try with simulated annealing: decreasing temperature is a probability to swap regardless of score
+3) try with metropolis: same as SA but use how much worse it is probability
+4) Metropolis and SA: combine them by multiplying probabilities
+* keep track of best seen and report that instead of last.
+
+* time them
 
 * could try swapping multiple at once til it plateaus then decrease it.
 * make images and DFT images be put together as one image

@@ -3,7 +3,7 @@
 #include "generatebn_hpf.h"
 #include "whitenoise.h"
 
-static void NormalizeHistogram(std::vector<float>& image, size_t width)
+static void NormalizeHistogram(std::mt19937& rng, std::vector<float>& image, size_t width)
 {
     struct SHistogramHelper
     {
@@ -21,7 +21,7 @@ static void NormalizeHistogram(std::vector<float>& image, size_t width)
     }
 
     // shuffle the pixels to randomly order ties. not as big a deal with floating point pixel values though
-    std::shuffle(pixels.begin(), pixels.end(), RNG());
+    std::shuffle(pixels.begin(), pixels.end(), rng);
 
     // sort the pixels by value
     std::sort(
@@ -44,8 +44,9 @@ static void NormalizeHistogram(std::vector<float>& image, size_t width)
 void GenerateBN_HPF(std::vector<uint8_t>& blueNoise, size_t width, size_t numPasses, float sigma, bool makeRed)
 {
     // first make white noise
+    std::mt19937 rng(GetRNGSeed());
     std::vector<uint8_t> pixels;
-    MakeWhiteNoise(pixels, width);
+    MakeWhiteNoise(rng, pixels, width);
 
     // convert from uint8 to float
     std::vector<float> pixelsFloat;
@@ -71,7 +72,7 @@ void GenerateBN_HPF(std::vector<uint8_t>& blueNoise, size_t width, size_t numPas
         }
 
         // Do a histogram fixup
-        NormalizeHistogram(pixelsFloat, width);
+        NormalizeHistogram(rng, pixelsFloat, width);
     }
 
     // convert back to uint8

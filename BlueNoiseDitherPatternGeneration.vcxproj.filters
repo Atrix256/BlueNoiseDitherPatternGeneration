@@ -39,6 +39,7 @@
     <ClInclude Include="convert.h" />
     <ClInclude Include="generatebn_hpf.h" />
     <ClInclude Include="generatebn_swap.h" />
+    <ClInclude Include="settings.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

@@ -96,8 +96,9 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         fopen_s(&file, csvFileName, "w+t");
 
     // make white noisen and calculate the energy
+    std::mt19937 rng(GetRNGSeed());
     std::vector<float> pixelsFloat;
-    MakeWhiteNoiseFloat(pixelsFloat, width);
+    MakeWhiteNoiseFloat(rng, pixelsFloat, width);
     float pixelsEnergy = CalculateEnergy(pixelsFloat, width);
 
     if (file)
@@ -115,8 +116,8 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         printf("\r%zu / %zu", swapTryCount, swapTries);
 
         // swap two random pixels in the pixels copy
-        size_t pixelA = dist(RNG());
-        size_t pixelB = dist(RNG());
+        size_t pixelA = dist(rng);
+        size_t pixelB = dist(rng);
         std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
 
         // calculate the new energy

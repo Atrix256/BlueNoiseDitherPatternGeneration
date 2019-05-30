@@ -128,6 +128,7 @@
     <ClInclude Include="generatebn_swap.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="misc.h" />
+    <ClInclude Include="settings.h" />
     <ClInclude Include="simple_fft\check_fft.hpp" />
     <ClInclude Include="simple_fft\copy_array.hpp" />
     <ClInclude Include="simple_fft\error_handling.hpp" />
