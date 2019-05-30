@@ -93,6 +93,10 @@ For Swap Method...
 3) try with metropolis: same as SA but use how much worse it is probability
 4) Metropolis and SA: combine them by multiplying probabilities
 * keep track of best seen and report that instead of last.
+* different results each time due to thread stuff.
+ * maybe have atomic give out rows of pixels, and have them sum their scores into a row.
+ * after the threads are done, it can single thread sum the rows.
+ * this should be deterministic.
 
 * other todo's in other files (i think just generatebn_swap.cpp)
 
