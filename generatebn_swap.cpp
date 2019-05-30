@@ -31,47 +31,77 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
 
     std::vector<std::thread> threads;
     threads.resize(std::thread::hardware_concurrency());
-    std::atomic<size_t> atomicp(0);
-    std::vector<float> energies(threads.size(), 0.0f);
+    std::atomic<size_t> atomicrow(0);
+    std::vector<float> energies(width, 0.0f);
 
     // split the work among however many threads are available
     for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
     {
         threads[threadIndex] = std::thread(
-            [threadIndex, pixelCount, width, &atomicp, &pixels, &energies]()
+            [pixelCount, width, &atomicrow, &pixels, &energies]()
             {
-                // get first pixel to process
-                size_t p = atomicp.fetch_add(1);
+                // get first row to process
+                size_t row = atomicrow.fetch_add(1);
 
-                // process pixels until we run out
-                while (p < pixelCount)
+                // process rows until we run out
+                while (row < width)
                 {
-                    float px = float(p % width);
-                    float py = float(p / width);
-                    float pvalue = pixels[p];
-
-                    // limit it to +/- 3 standard deviations which is 99.7% of the data
-                    if (LIMITTO3SIGMA)
+                    // for each pixel in this row...
+                    for (size_t column = 0; column < width; ++column)
                     {
-                        for (int oy = -c_3Sigma_i; oy <= c_3Sigma_i; ++oy)
+                        size_t p = row * width + column;
+
+                        float px = float(p % width);
+                        float py = float(p / width);
+                        float pvalue = pixels[p];
+
+                        // limit it to +/- 3 standard deviations which is 99.7% of the data
+                        if (LIMITTO3SIGMA)
                         {
-                            float qy = py + float(oy);
-
-                            int qyi = int(qy);
-                            if (qyi < 0)
-                                qyi += int(width);
-                            qyi = qyi % width;
-
-                            for (int ox = -c_3Sigma_i; ox <= c_3Sigma_i; ++ox)
+                            for (int oy = -c_3Sigma_i; oy <= c_3Sigma_i; ++oy)
                             {
-                                float qx = px + float(ox);
+                                float qy = py + float(oy);
 
-                                int qxi = int(qx);
-                                if (qxi < 0)
-                                    qxi += int(width);
-                                qxi = qxi % width;
+                                int qyi = int(qy);
+                                if (qyi < 0)
+                                    qyi += int(width);
+                                qyi = qyi % width;
 
-                                float qvalue = pixels[qyi*width + qxi];
+                                for (int ox = -c_3Sigma_i; ox <= c_3Sigma_i; ++ox)
+                                {
+                                    float qx = px + float(ox);
+
+                                    int qxi = int(qx);
+                                    if (qxi < 0)
+                                        qxi += int(width);
+                                    qxi = qxi % width;
+
+                                    float qvalue = pixels[qyi*width + qxi];
+
+                                    float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
+
+                                    float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
+
+                                    float d = 1.0f;
+                                    float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+
+                                    float energy = exp(-leftTerm - rightTerm);
+
+                                    energies[row] += energy;
+                                    // TODO: when supporting multiple channel blue noise, right term needs treatment
+                                }
+                            }
+                        }
+                        else
+                        {
+                            for (size_t q = 0; q < pixelCount; ++q)
+                            {
+                                if (p == q)
+                                    continue;
+
+                                float qx = float(q % width);
+                                float qy = float(q / width);
+                                float qvalue = pixels[q];
 
                                 float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
 
@@ -82,38 +112,14 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
 
                                 float energy = exp(-leftTerm - rightTerm);
 
-                                energies[threadIndex] += energy;
+                                energies[row] += energy;
                                 // TODO: when supporting multiple channel blue noise, right term needs treatment
                             }
                         }
                     }
-                    else
-                    {
-                        for (size_t q = 0; q < pixelCount; ++q)
-                        {
-                            if (p == q)
-                                continue;
 
-                            float qx = float(q % width);
-                            float qy = float(q / width);
-                            float qvalue = pixels[q];
-
-                            float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
-
-                            float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
-
-                            float d = 1.0f;
-                            float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
-
-                            float energy = exp(-leftTerm - rightTerm);
-
-                            energies[threadIndex] += energy;
-                            // TODO: when supporting multiple channel blue noise, right term needs treatment
-                        }
-                    }
-
-                    // get next pixel to process
-                    p = atomicp.fetch_add(1);
+                    // get next row to process
+                    row = atomicrow.fetch_add(1);
                 }
             }
         );
