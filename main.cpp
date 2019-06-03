@@ -120,8 +120,8 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap.data.csv", true, 0.0f);
-        WriteHistogram(blueNoise, "out/blueSwap.histogram.csv");
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1);
+        WriteHistogram(blueNoise, "out/blueSwap1.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
 
@@ -130,9 +130,55 @@ int main(int argc, char** argv)
         size_t noiseAndDFT_height = 0;
         AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
-        stbi_write_png("out/blueSwap.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+        stbi_write_png("out/blueSwap1.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
 
-        TestMask(blueNoise, c_width, "out/blueSwap");
+        TestMask(blueNoise, c_width, "out/blueSwap1");
+    }
+
+    // generate blue noise by swapping white noise pixels to make it more blue. 1-5 swaps
+    {
+        ScopedTimer timer("Blue noise by swapping white noise. 1-5 swaps.");
+
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        std::vector<uint8_t> blueNoise;
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5);
+        WriteHistogram(blueNoise, "out/blueSwap5.histogram.csv");
+        std::vector<uint8_t> blueNoiseDFT;
+        DFT(blueNoise, blueNoiseDFT, c_width);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/blueSwap5.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(blueNoise, c_width, "out/blueSwap5");
+    }
+
+    // generate blue noise by swapping white noise pixels to make it more blue. 1-10 swaps
+    {
+        ScopedTimer timer("Blue noise by swapping white noise. 1-10 swaps.");
+
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        std::vector<uint8_t> blueNoise;
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10);
+        WriteHistogram(blueNoise, "out/blueSwap10.histogram.csv");
+        std::vector<uint8_t> blueNoiseDFT;
+        DFT(blueNoise, blueNoiseDFT, c_width);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/blueSwap10.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(blueNoise, c_width, "out/blueSwap10");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
@@ -143,7 +189,7 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f);
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1);
         WriteHistogram(blueNoise, "out/blueSwapSA.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
@@ -166,6 +212,11 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
+
+* maybe need to try random amounts of swaps each time? maybe like 1 to 5?
+ * compare that vs 1 swap and see if it's an improvement?
+
+* make red noise by swapping, after you figure out the best swapping stuff.
 
 For Swap Method...
 2) try with simulated annealing: decreasing temperature is a probability to swap regardless of score

@@ -136,10 +136,20 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     return energySum;
 }
 
-void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName, bool limitTo3Sigma, float simulatedAnnealingCoolingMultiplier)
+void GenerateBN_Swap(
+    std::vector<uint8_t>& pixels,
+    size_t width,
+    size_t swapTries,
+    const char* csvFileName,
+    bool limitTo3Sigma,
+    float simulatedAnnealingCoolingMultiplier,
+    int numSimultaneousSwaps_
+)
 {
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
     std::uniform_real_distribution<float> distFloat(0.0f, 1.0f);
+
+    std::uniform_int_distribution<int> distSwapCount(1, numSimultaneousSwaps_);
 
     FILE* file = nullptr;
     if(csvFileName)
@@ -170,10 +180,17 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         simulationTemperature *= simulatedAnnealingCoolingMultiplier;
         printf("\r%zu / %zu", swapTryCount, swapTries);
 
-        // swap two random pixels in the pixels copy
-        size_t pixelA = dist(rng);
-        size_t pixelB = dist(rng);
-        std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
+        int numSimultaneousSwaps = 1;
+        if (numSimultaneousSwaps_ > 1)
+            numSimultaneousSwaps = distSwapCount(rng);
+
+        // swap random pixels in the pixels copy
+        std::vector<size_t> swaps;
+        for (int swapIndex = 0; swapIndex < numSimultaneousSwaps * 2; ++swapIndex)
+            swaps.push_back(dist(rng));
+
+        for (int swapIndex = 0; swapIndex < numSimultaneousSwaps; ++swapIndex)
+            std::swap(pixelsCopy[swaps[swapIndex * 2]], pixelsCopy[swaps[swapIndex * 2 + 1]]);
 
         // calculate the new energy
         float newPixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsCopy, width) : CalculateEnergy<false>(pixelsCopy, width);
@@ -184,10 +201,11 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
             pixelsEnergy = newPixelsEnergy;
             std::swap(pixelsFloat, pixelsCopy);
         }
-        // else reverse the swap
+        // else reverse the swap by doing the same swaps in the reverse order (in case they overlap)
         else
         {
-            std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
+            for (int swapIndex = numSimultaneousSwaps-1; swapIndex >= 0; --swapIndex)
+                std::swap(pixelsCopy[swaps[swapIndex * 2]], pixelsCopy[swaps[swapIndex * 2 + 1]]);
         }
 
         if (file)
