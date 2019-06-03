@@ -136,9 +136,10 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     return energySum;
 }
 
-void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName, bool limitTo3Sigma)
+void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTries, const char* csvFileName, bool limitTo3Sigma, float simulatedAnnealingCoolingMultiplier)
 {
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
+    std::uniform_real_distribution<float> distFloat(0.0f, 1.0f);
 
     FILE* file = nullptr;
     if(csvFileName)
@@ -150,10 +151,12 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
     MakeWhiteNoiseFloat(rng, pixelsFloat, width);
     float pixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsFloat, width) : CalculateEnergy<false>(pixelsFloat, width);
 
+    float simulationTemperature = 1.0f *  simulatedAnnealingCoolingMultiplier;
+
     if (file)
     {
-        fprintf(file, "\"Step\",\"Energy\"\n");
-        fprintf(file, "\"-1\",\"%f\"\n", pixelsEnergy);
+        fprintf(file, "\"Step\",\"Energy\",\"Temperature\"\n");
+        fprintf(file, "\"-1\",\"%f\",\"%f\"\n", pixelsEnergy, simulationTemperature);
     }
 
     // make a copy of the white noise
@@ -162,6 +165,9 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
     // do swaps to make it more blue
     for (size_t swapTryCount = 0; swapTryCount < swapTries; ++swapTryCount)
     {
+        // TODO: keep track of the best energy image and return that instead of the last!
+        // TODO: we should let it reach zero temperature before the last sample I think.
+        simulationTemperature *= simulatedAnnealingCoolingMultiplier;
         printf("\r%zu / %zu", swapTryCount, swapTries);
 
         // swap two random pixels in the pixels copy
@@ -172,19 +178,20 @@ void GenerateBN_Swap(std::vector<uint8_t>& pixels, size_t width, size_t swapTrie
         // calculate the new energy
         float newPixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsCopy, width) : CalculateEnergy<false>(pixelsCopy, width);
 
-        // if the energy is better, take it, else reverse it
-        if (newPixelsEnergy < pixelsEnergy)
+        // if the energy is better, or random chance based on simulation temperature, take it
+        if (newPixelsEnergy < pixelsEnergy || (simulationTemperature > 0.0f && distFloat(rng) < simulationTemperature))
         {
             pixelsEnergy = newPixelsEnergy;
             std::swap(pixelsFloat, pixelsCopy);
         }
+        // else reverse the swap
         else
         {
             std::swap(pixelsCopy[pixelA], pixelsCopy[pixelB]);
         }
 
         if (file)
-            fprintf(file, "\"%zu\",\"%f\"\n", swapTryCount, pixelsEnergy);
+            fprintf(file, "\"%zu\",\"%f\",\"%f\"\n", swapTryCount, pixelsEnergy, simulationTemperature);
     }
 
     if (file)

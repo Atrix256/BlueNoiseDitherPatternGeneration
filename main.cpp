@@ -8,12 +8,18 @@
 #include "generatebn_hpf.h"
 #include "generatebn_swap.h"
 #include "histogram.h"
+#include "image.h"
 #include "misc.h"
 #include "whitenoise.h"
 #include "scoped_timer.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
+
+void TestMask()
+{
+
+}
 
 int main(int argc, char** argv)
 {
@@ -26,11 +32,16 @@ int main(int argc, char** argv)
         std::mt19937 rng(GetRNGSeed());
         std::vector<uint8_t> whiteNoise;
         MakeWhiteNoise(rng, whiteNoise, c_width);
-        stbi_write_png("out/white.png", int(c_width), int(c_width), 1, whiteNoise.data(), 0);
         WriteHistogram(whiteNoise, "out/white.histogram.csv");
         std::vector<uint8_t> whiteNoiseDFT;
         DFT(whiteNoise, whiteNoiseDFT, c_width);
-        stbi_write_png("out/white.DFT.png", int(c_width), int(c_width), 1, whiteNoiseDFT.data(), 0);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(whiteNoise, c_width, c_width, whiteNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/white.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
@@ -41,11 +52,16 @@ int main(int argc, char** argv)
 
         std::vector<uint8_t> blueNoise;
         GenerateBN_HPF(blueNoise, c_width);
-        stbi_write_png("out/blueHPF.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
         WriteHistogram(blueNoise, "out/blueHPF.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
-        stbi_write_png("out/blueHPF.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/blueHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
     }
 
     // generate red noise by repeated low pass filtering white noise and fixing up the histogram
@@ -56,11 +72,16 @@ int main(int argc, char** argv)
 
         std::vector<uint8_t> redNoise;
         GenerateBN_HPF(redNoise, c_width, 5, 1.0f, true);
-        stbi_write_png("out/redHPF.png", int(c_width), int(c_width), 1, redNoise.data(), 0);
         WriteHistogram(redNoise, "out/redHPF.histogram.csv");
         std::vector<uint8_t> redNoiseDFT;
         DFT(redNoise, redNoiseDFT, c_width);
-        stbi_write_png("out/redHPF.DFT.png", int(c_width), int(c_width), 1, redNoiseDFT.data(), 0);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(redNoise, c_width, c_width, redNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/redHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue
@@ -71,12 +92,38 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap.data.csv", true);
-        stbi_write_png("out/blueSwap.png", int(c_width), int(c_width), 1, blueNoise.data(), 0);
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap.data.csv", true, 0.0f);
         WriteHistogram(blueNoise, "out/blueSwap.histogram.csv");
         std::vector<uint8_t> blueNoiseDFT;
         DFT(blueNoise, blueNoiseDFT, c_width);
-        stbi_write_png("out/blueSwap.DFT.png", int(c_width), int(c_width), 1, blueNoiseDFT.data(), 0);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/blueSwap.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+    }
+
+    // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
+    {
+        ScopedTimer timer("Blue noise by swapping white noise - with SA");
+
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        std::vector<uint8_t> blueNoise;
+        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f);
+        WriteHistogram(blueNoise, "out/blueSwapSA.histogram.csv");
+        std::vector<uint8_t> blueNoiseDFT;
+        DFT(blueNoise, blueNoiseDFT, c_width);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        stbi_write_png("out/blueSwapSA.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
     }
 
     system("pause");
@@ -88,15 +135,21 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
+* could do the tests where you make a DFT with the noise thresholded at different levels
+
 For Swap Method...
 2) try with simulated annealing: decreasing temperature is a probability to swap regardless of score
 3) try with metropolis: same as SA but use how much worse it is probability
 4) Metropolis and SA: combine them by multiplying probabilities
 * keep track of best seen and report that instead of last.
+5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points
+* Round robin give each value a sample before moving onto sample 2,3,etc
+* Could also try having that energy function be what scores candidates instead of distance. Only consider pixels with values set already
+
+* could try multiple swaps at once. maybe start with a larger number then decrease the swap count as time goes on?
 
 * other todo's in other files (i think just generatebn_swap.cpp)
 
-* make images and DFT images be put together as one image
 ? does the thresholding constraint make blue noise that's worse for the non thresholding case?
 
 
