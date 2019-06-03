@@ -43,6 +43,26 @@ void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* b
     }
 }
 
+void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* baseFileName)
+{
+    char fileName[256];
+    sprintf(fileName, "%s.histogram.csv", baseFileName);
+
+    WriteHistogram(noise, fileName);
+    std::vector<uint8_t> noiseDFT;
+    DFT(noise, noiseDFT, noiseSize);
+
+    std::vector<uint8_t> noiseAndDFT;
+    size_t noiseAndDFT_width = 0;
+    size_t noiseAndDFT_height = 0;
+    AppendImageHorizontal(noise, noiseSize, noiseSize, noiseDFT, noiseSize, noiseSize, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+    sprintf(fileName, "%s.png", baseFileName);
+    stbi_write_png(fileName, int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+    TestMask(noise, noiseSize, baseFileName);
+}
+
 int main(int argc, char** argv)
 {
     // generate some white noise
@@ -52,20 +72,10 @@ int main(int argc, char** argv)
         static size_t c_width = 256;
 
         std::mt19937 rng(GetRNGSeed());
-        std::vector<uint8_t> whiteNoise;
-        MakeWhiteNoise(rng, whiteNoise, c_width);
-        WriteHistogram(whiteNoise, "out/white.histogram.csv");
-        std::vector<uint8_t> whiteNoiseDFT;
-        DFT(whiteNoise, whiteNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        MakeWhiteNoise(rng, noise, c_width);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(whiteNoise, c_width, c_width, whiteNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/white.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(whiteNoise, c_width, "out/white");
+        TestNoise(noise, c_width, "out/white");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
@@ -74,20 +84,10 @@ int main(int argc, char** argv)
 
         static size_t c_width = 256;
 
-        std::vector<uint8_t> blueNoise;
-        GenerateBN_HPF(blueNoise, c_width);
-        WriteHistogram(blueNoise, "out/blueHPF.histogram.csv");
-        std::vector<uint8_t> blueNoiseDFT;
-        DFT(blueNoise, blueNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_HPF(noise, c_width);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/blueHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(blueNoise, c_width, "out/blueHPF");
+        TestNoise(noise, c_width, "out/blueHPF");
     }
 
     // generate red noise by repeated low pass filtering white noise and fixing up the histogram
@@ -96,20 +96,10 @@ int main(int argc, char** argv)
 
         static size_t c_width = 256;
 
-        std::vector<uint8_t> redNoise;
-        GenerateBN_HPF(redNoise, c_width, 5, 1.0f, true);
-        WriteHistogram(redNoise, "out/redHPF.histogram.csv");
-        std::vector<uint8_t> redNoiseDFT;
-        DFT(redNoise, redNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_HPF(noise, c_width, 5, 1.0f, true);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(redNoise, c_width, c_width, redNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/redHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(redNoise, c_width, "out/redHPF");
+        TestNoise(noise, c_width, "out/redHPF");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue
@@ -119,20 +109,10 @@ int main(int argc, char** argv)
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
-        std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1);
-        WriteHistogram(blueNoise, "out/blueSwap1.histogram.csv");
-        std::vector<uint8_t> blueNoiseDFT;
-        DFT(blueNoise, blueNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/blueSwap1.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(blueNoise, c_width, "out/blueSwap1");
+        TestNoise(noise, c_width, "out/blueSwap1");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue. 1-5 swaps
@@ -142,20 +122,10 @@ int main(int argc, char** argv)
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
-        std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5);
-        WriteHistogram(blueNoise, "out/blueSwap5.histogram.csv");
-        std::vector<uint8_t> blueNoiseDFT;
-        DFT(blueNoise, blueNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/blueSwap5.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(blueNoise, c_width, "out/blueSwap5");
+        TestNoise(noise, c_width, "out/blueSwap5");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue. 1-10 swaps
@@ -165,20 +135,10 @@ int main(int argc, char** argv)
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
-        std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10);
-        WriteHistogram(blueNoise, "out/blueSwap10.histogram.csv");
-        std::vector<uint8_t> blueNoiseDFT;
-        DFT(blueNoise, blueNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/blueSwap10.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(blueNoise, c_width, "out/blueSwap10");
+        TestNoise(noise, c_width, "out/blueSwap10");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
@@ -188,20 +148,10 @@ int main(int argc, char** argv)
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
-        std::vector<uint8_t> blueNoise;
-        GenerateBN_Swap(blueNoise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1);
-        WriteHistogram(blueNoise, "out/blueSwapSA.histogram.csv");
-        std::vector<uint8_t> blueNoiseDFT;
-        DFT(blueNoise, blueNoiseDFT, c_width);
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1);
 
-        std::vector<uint8_t> noiseAndDFT;
-        size_t noiseAndDFT_width = 0;
-        size_t noiseAndDFT_height = 0;
-        AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
-
-        stbi_write_png("out/blueSwapSA.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
-
-        TestMask(blueNoise, c_width, "out/blueSwapSA");
+        TestNoise(noise, c_width, "out/blueSwapSA");
     }
 
     system("pause");
@@ -212,9 +162,6 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
-
-* maybe need to try random amounts of swaps each time? maybe like 1 to 5?
- * compare that vs 1 swap and see if it's an improvement?
 
 * make red noise by swapping, after you figure out the best swapping stuff.
 
