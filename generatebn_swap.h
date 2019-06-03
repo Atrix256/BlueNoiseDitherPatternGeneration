@@ -11,5 +11,7 @@ void GenerateBN_Swap(
     const char* csvFileName,
     bool limitTo3Sigma,
     float simulatedAnnealingCoolingMultiplier,
-    int numSimultaneousSwaps
+    int numSimultaneousSwaps,
+    bool useMetropolis,
+    bool minimizeEnergy // if false, will maximize energy instead!
 );

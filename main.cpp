@@ -110,7 +110,7 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1);
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1, false, true);
 
         TestNoise(noise, c_width, "out/blueSwap1");
     }
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5);
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5, false, true);
 
         TestNoise(noise, c_width, "out/blueSwap5");
     }
@@ -136,9 +136,22 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10);
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10, false, true);
 
         TestNoise(noise, c_width, "out/blueSwap10");
+    }
+
+    // generate red noise by swapping white noise pixels to make it more red. 1-10 swaps
+    {
+        ScopedTimer timer("Red noise by swapping white noise. 1-10 swaps.");
+
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/redSwap10.data.csv", true, 0.0f, 10, false, false);
+
+        TestNoise(noise, c_width, "out/redSwap10");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
@@ -149,9 +162,22 @@ int main(int argc, char** argv)
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1);
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1, false, true);
 
         TestNoise(noise, c_width, "out/blueSwapSA");
+    }
+
+    // generate blue noise by swapping white noise pixels to make it more blue - with metropolis algorithm and 1-10 swaps
+    {
+        ScopedTimer timer("Blue noise by swapping white noise - with metropolis and 1-10 swaps");
+
+        static size_t c_width = 32;
+        static size_t c_numSwaps = 4096;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapMet.data.csv", true, 1.0f, 10, false, true);
+
+        TestNoise(noise, c_width, "out/blueSwapMet");
     }
 
     system("pause");
@@ -163,16 +189,16 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
-* make red noise by swapping, after you figure out the best swapping stuff.
-
 For Swap Method...
-2) try with simulated annealing: decreasing temperature is a probability to swap regardless of score
-3) try with metropolis: same as SA but use how much worse it is probability
-4) Metropolis and SA: combine them by multiplying probabilities
-* keep track of best seen and report that instead of last.
 5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points
 * Round robin give each value a sample before moving onto sample 2,3,etc
 * Could also try having that energy function be what scores candidates instead of distance. Only consider pixels with values set already
+
+* void and cluster
+
+* yes, implement paniq's algorithm. do it as just multithreaded code reading a copy from prior frame. should be quick.
+ * see how many steps it takes to converge.
+ * do the 2 second convergence thing instead of the 20s one, since you are starting with good white noise.
 
 * could try multiple swaps at once. maybe start with a larger number then decrease the swap count as time goes on?
 
@@ -185,7 +211,7 @@ For Swap Method...
 ================== PLANS ==================
 
 Generation Methods
-1) Swap from that paper
+1) Swap from that paper - DONE
 2) Leonard's swap
 3) high pass filter   - DONE
 4) void and cluster
@@ -216,6 +242,15 @@ Also do red noise?
 
 * The DFT function is having some problem with DC being huge, so i zero it out for now
  * meh...
+
+
+ 
+ * simulated annealing as i implemented it seems to have failed: sometimes taking worse results didn't help break out of any local minima
+ * metropolis didn't help either: it's a different way of choosing worse results some of the time. didn't help break out of any local minima.
+ * what does seem to help is sometimes choosing more than 1 swap.  It's possible that maybe the # of swaps tested could start out high and decrease over time.
+  * I didn't try that
+  * a good test would be to graph the success vs failures of # of swaps over time.
+  * if higher counts worked better in the beginning but failed more towards the end, it'd be more efficient to use lower counts towards the end.
 
 ================== LINKS ==================
 

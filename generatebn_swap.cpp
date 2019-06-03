@@ -143,7 +143,9 @@ void GenerateBN_Swap(
     const char* csvFileName,
     bool limitTo3Sigma,
     float simulatedAnnealingCoolingMultiplier,
-    int numSimultaneousSwaps_
+    int numSimultaneousSwaps_,
+    bool useMetropolis,
+    bool minimizeEnergy
 )
 {
     std::uniform_int_distribution<size_t> dist(0, width*width - 1);
@@ -195,8 +197,22 @@ void GenerateBN_Swap(
         // calculate the new energy
         float newPixelsEnergy = limitTo3Sigma ? CalculateEnergy<true>(pixelsCopy, width) : CalculateEnergy<false>(pixelsCopy, width);
 
+        bool passesTest = minimizeEnergy
+            ? newPixelsEnergy < pixelsEnergy
+            : newPixelsEnergy > pixelsEnergy;
+
+        // calculate the chance of taking a worse scoring result.
+        float chance = simulationTemperature;
+        if (useMetropolis && !passesTest)
+        {
+            if(minimizeEnergy)
+                chance *= pixelsEnergy / newPixelsEnergy;
+            else
+                chance *= newPixelsEnergy / pixelsEnergy;
+        }
+
         // if the energy is better, or random chance based on simulation temperature, take it
-        if (newPixelsEnergy < pixelsEnergy || (simulationTemperature > 0.0f && distFloat(rng) < simulationTemperature))
+        if (passesTest || (chance > 0.0f && distFloat(rng) < chance))
         {
             pixelsEnergy = newPixelsEnergy;
             std::swap(pixelsFloat, pixelsCopy);
