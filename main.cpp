@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <vector>
 
+#include "convert.h"
 #include "dft.h"
 #include "generatebn_hpf.h"
 #include "generatebn_swap.h"
@@ -16,9 +17,30 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 
-void TestMask()
+void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* baseFileName)
 {
+    std::vector<uint8_t> thresholdImage(noise.size());
 
+    for (size_t testIndex = 0; testIndex < THRESHOLD_SAMPLES(); ++testIndex)
+    {
+        float percent = float(testIndex + 1) / float(THRESHOLD_SAMPLES() + 1);
+        uint8_t thresholdValue = FromFloat<uint8_t>(percent);
+
+        for (size_t pixelIndex = 0, pixelCount = noise.size(); pixelIndex < pixelCount; ++pixelIndex)
+            thresholdImage[pixelIndex] = noise[pixelIndex] > thresholdValue ? 255 : 0;
+
+        std::vector<uint8_t> thresholdImageDFT;
+        DFT(thresholdImage, thresholdImageDFT, noiseSize);
+
+        std::vector<uint8_t> noiseAndDFT;
+        size_t noiseAndDFT_width = 0;
+        size_t noiseAndDFT_height = 0;
+        AppendImageHorizontal(thresholdImage, noiseSize, noiseSize, thresholdImageDFT, noiseSize, noiseSize, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
+
+        char fileName[256];
+        sprintf(fileName, "%s_%u.png", baseFileName, unsigned(percent*100.0f));
+        stbi_write_png(fileName, int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+    }
 }
 
 int main(int argc, char** argv)
@@ -42,6 +64,8 @@ int main(int argc, char** argv)
         AppendImageHorizontal(whiteNoise, c_width, c_width, whiteNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         stbi_write_png("out/white.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(whiteNoise, c_width, "out/white");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
@@ -62,6 +86,8 @@ int main(int argc, char** argv)
         AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         stbi_write_png("out/blueHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(blueNoise, c_width, "out/blueHPF");
     }
 
     // generate red noise by repeated low pass filtering white noise and fixing up the histogram
@@ -82,6 +108,8 @@ int main(int argc, char** argv)
         AppendImageHorizontal(redNoise, c_width, c_width, redNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         stbi_write_png("out/redHPF.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(redNoise, c_width, "out/redHPF");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue
@@ -103,6 +131,8 @@ int main(int argc, char** argv)
         AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         stbi_write_png("out/blueSwap.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(blueNoise, c_width, "out/blueSwap");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
@@ -124,6 +154,8 @@ int main(int argc, char** argv)
         AppendImageHorizontal(blueNoise, c_width, c_width, blueNoiseDFT, c_width, c_width, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         stbi_write_png("out/blueSwapSA.png", int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
+
+        TestMask(blueNoise, c_width, "out/blueSwapSA");
     }
 
     system("pause");
@@ -134,8 +166,6 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
-
-* could do the tests where you make a DFT with the noise thresholded at different levels
 
 For Swap Method...
 2) try with simulated annealing: decreasing temperature is a probability to swap regardless of score
