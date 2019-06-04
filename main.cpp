@@ -108,7 +108,7 @@ int main(int argc, char** argv)
     {
         ScopedTimer timer("Blue noise by void and cluster");
 
-        static size_t c_width = 256;
+        static size_t c_width = 16;
         static size_t c_iterations = 120;
 
         std::vector<uint8_t> noise;
@@ -116,6 +116,8 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/blueVC");
     }
+
+    // TODO: make void and cluster thing be bigger
 
     // TODO: temp!
     return 0;
