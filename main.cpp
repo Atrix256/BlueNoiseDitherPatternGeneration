@@ -223,12 +223,6 @@ For Swap Method...
 
 * void and cluster
 
-* yes, implement paniq's algorithm. do it as just multithreaded code reading a copy from prior frame. should be quick.
- * see how many steps it takes to converge.
- * do the 2 second convergence thing instead of the 20s one, since you are starting with good white noise.
-
-* could try multiple swaps at once. maybe start with a larger number then decrease the swap count as time goes on?
-
 * other todo's in other files (i think just generatebn_swap.cpp)
 
 ? does the thresholding constraint make blue noise that's worse for the non thresholding case?
