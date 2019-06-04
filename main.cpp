@@ -273,6 +273,11 @@ Also do red noise?
   * a good test would be to graph the success vs failures of # of swaps over time.
   * if higher counts worked better in the beginning but failed more towards the end, it'd be more efficient to use lower counts towards the end.
 
+
+* Paniq's technique is really fast and does well when thresholded too!
+ * the histogram is also balanced amazingly...
+ * need to understand how it does what it does better
+
 ================== LINKS ==================
 
 * repeated LPF: https://blog.demofox.org/2017/10/25/transmuting-white-noise-to-blue-red-green-purple/
@@ -285,5 +290,7 @@ paniq's thing, inspired by it but meant for use on the GPU. Implemented in shade
 * https://twitter.com/paniq/status/1134087386651082756?s=12
 * it converges in 20 seconds (60*20 = 1200 frames).  It can actually convert in 2 seconds (120 frames) if you start with good white noise or don't care if an edge case isn't great.
 * I haven't checked the DFT but to the eye it looks good. (should check DFT!)
+
+* void and cluster: http://cv.ulichney.com/papers/1993-void-cluster.pdf
 
 */
