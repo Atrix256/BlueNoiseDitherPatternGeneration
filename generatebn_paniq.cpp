@@ -193,6 +193,7 @@ vec2 quantify_error(const std::vector<float>& oldNoise, size_t oldNoiseWidth, iv
     return result;
 }
 
+template <bool MAKE_BLUE_NOISE>
 void mainImage(float& fragColor, const vec2& fragCoord, const ivec2& sz, size_t iFrame, const std::vector<float>& oldNoise, size_t oldNoiseWidth)
 {
     ivec2 p0 = ivec2{ int(fragCoord[0]),int(fragCoord[1]) };
@@ -230,8 +231,18 @@ void mainImage(float& fragColor, const vec2& fragCoord, const ivec2& sz, size_t 
 
         float p = v0;
         if (pp0 == p0) {
-            if (/*(chance < force_limit) ||*/ ((chance < chance_limit) && (err_x < err_s))) {
-                p = v1;
+
+            if (MAKE_BLUE_NOISE)
+            {
+                if (/*(chance < force_limit) ||*/ ((chance < chance_limit) && (err_x < err_s))) {
+                    p = v1;
+                }
+            }
+            else
+            {
+                if (/*(chance < force_limit) ||*/ ((chance < chance_limit) && (err_x > err_s))) {
+                    p = v1;
+                }
             }
         }
         fragColor = p;
@@ -241,7 +252,8 @@ void mainImage(float& fragColor, const vec2& fragCoord, const ivec2& sz, size_t 
 void GenerateBN_Paniq(
     std::vector<uint8_t>& blueNoise,
     size_t width,
-    size_t iterations
+    size_t iterations,
+    bool makeBlueNoise
 )
 {
     // start with some white noise
@@ -266,7 +278,7 @@ void GenerateBN_Paniq(
         for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
         {
             threads[threadIndex] = std::thread(
-                [width, iteration, &atomicrow, &noise, &noise2]()
+                [width, iteration, makeBlueNoise, &atomicrow, &noise, &noise2]()
                 {
                     // get first row to process
                     size_t row = atomicrow.fetch_add(1);
@@ -279,7 +291,10 @@ void GenerateBN_Paniq(
                         for (size_t ix = 0; ix < width; ++ix)
                         {
                             float pixelOut;
-                            mainImage(pixelOut, vec2{ float(ix), float(row) }, ivec2{ int(width), int(width) }, iteration, noise, width);
+                            if(makeBlueNoise)
+                                mainImage<true>(pixelOut, vec2{ float(ix), float(row) }, ivec2{ int(width), int(width) }, iteration, noise, width);
+                            else
+                                mainImage<false>(pixelOut, vec2{ float(ix), float(row) }, ivec2{ int(width), int(width) }, iteration, noise, width);
                             dest[ix] = pixelOut;
                         }
 

@@ -7,5 +7,6 @@
 void GenerateBN_Paniq(
     std::vector<uint8_t>& blueNoise,
     size_t width,
-    size_t iterations
+    size_t iterations,
+    bool makeBlueNoise // if false, makes red noise
 );

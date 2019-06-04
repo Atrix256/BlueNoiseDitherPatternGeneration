@@ -111,9 +111,22 @@ int main(int argc, char** argv)
         static size_t c_iterations = 120;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Paniq(noise, c_width, c_iterations);
+        GenerateBN_Paniq(noise, c_width, c_iterations, true);
 
         TestNoise(noise, c_width, "out/bluePaniq");
+    }
+
+    // generate blue noise by using paniq's technique
+    {
+        ScopedTimer timer("Red noise by paniq");
+
+        static size_t c_width = 256;
+        static size_t c_iterations = 120;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Paniq(noise, c_width, c_iterations, false);
+
+        TestNoise(noise, c_width, "out/redPaniq");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue
@@ -202,8 +215,6 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
-
-* make red noise with paniq's technique
 
 For Swap Method...
 5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points
