@@ -177,8 +177,6 @@ void GenerateBN_Swap(
     // do swaps to make it more blue
     for (size_t swapTryCount = 0; swapTryCount < swapTries; ++swapTryCount)
     {
-        // TODO: keep track of the best energy image and return that instead of the last!
-        // TODO: we should let it reach zero temperature before the last sample I think.
         simulationTemperature *= simulatedAnnealingCoolingMultiplier;
         printf("\r%zu / %zu", swapTryCount, swapTries);
 

@@ -119,6 +119,7 @@
     <ClCompile Include="generatebn_hpf.cpp" />
     <ClCompile Include="generatebn_paniq.cpp" />
     <ClCompile Include="generatebn_swap.cpp" />
+    <ClCompile Include="generatebn_void_cluster.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -129,6 +130,7 @@
     <ClInclude Include="generatebn_hpf.h" />
     <ClInclude Include="generatebn_paniq.h" />
     <ClInclude Include="generatebn_swap.h" />
+    <ClInclude Include="generatebn_void_cluster.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="misc.h" />

@@ -9,6 +9,7 @@
 #include "generatebn_hpf.h"
 #include "generatebn_paniq.h"
 #include "generatebn_swap.h"
+#include "generatebn_void_cluster.h"
 #include "histogram.h"
 #include "image.h"
 #include "misc.h"
@@ -102,6 +103,22 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/redHPF");
     }
+
+    // generate blue noise using void and cluster
+    {
+        ScopedTimer timer("Blue noise by void and cluster");
+
+        static size_t c_width = 256;
+        static size_t c_iterations = 120;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Void_Cluster(noise, c_width);
+
+        TestNoise(noise, c_width, "out/blueVC");
+    }
+
+    // TODO: temp!
+    return 0;
 
     // generate blue noise by using paniq's technique
     {
@@ -215,6 +232,8 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
+
+? can void and cluster make red noise?
 
 For Swap Method...
 5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points

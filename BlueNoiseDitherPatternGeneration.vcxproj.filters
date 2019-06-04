@@ -7,6 +7,7 @@
     <ClCompile Include="generatebn_swap.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="generatebn_paniq.cpp" />
+    <ClCompile Include="generatebn_void_cluster.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simple_fft\check_fft.hpp">
@@ -45,6 +46,7 @@
     <ClInclude Include="scoped_timer.h" />
     <ClInclude Include="image.h" />
     <ClInclude Include="generatebn_paniq.h" />
+    <ClInclude Include="generatebn_void_cluster.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">
