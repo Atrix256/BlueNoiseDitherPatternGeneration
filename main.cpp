@@ -67,6 +67,7 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
+    /*
     // generate some white noise
     {
         ScopedTimer timer("White noise");
@@ -103,6 +104,7 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/redHPF");
     }
+    */
 
     // generate blue noise using void and cluster
     {
@@ -269,6 +271,8 @@ Also do red noise?
 
 
 ================== NOTES ==================
+
+* for void and cluster, it'd be neat to show the evolution of the starting pattern with the red, green, yellow and white dots. Maybe a gif.
 
  * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
   * 1st is for like AO ray perterbation & ray march offsets
