@@ -259,4 +259,10 @@ Also do red noise?
 * swap paper: https://www.arnoldrenderer.com/research/dither_abstract.pdf
  * and an implementation: https://github.com/joshbainbridge/blue-noise-generator/blob/master/src/main.cpp
 
+paniq's thing, inspired by it but meant for use on the GPU. Implemented in shadertoy.
+* https://www.shadertoy.com/view/XtdyW2 
+* https://twitter.com/paniq/status/1134087386651082756?s=12
+* it converges in 20 seconds (60*20 = 1200 frames).  It can actually convert in 2 seconds (120 frames) if you start with good white noise or don't care if an edge case isn't great.
+* I haven't checked the DFT but to the eye it looks good. (should check DFT!)
+
 */
