@@ -7,6 +7,7 @@
 #include "convert.h"
 #include "dft.h"
 #include "generatebn_hpf.h"
+#include "generatebn_paniq.h"
 #include "generatebn_swap.h"
 #include "histogram.h"
 #include "image.h"
@@ -102,6 +103,19 @@ int main(int argc, char** argv)
         TestNoise(noise, c_width, "out/redHPF");
     }
 
+    // generate blue noise by using paniq's technique
+    {
+        ScopedTimer timer("Blue noise by paniq");
+
+        static size_t c_width = 256;
+        static size_t c_iterations = 120;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Paniq(noise, c_width, c_iterations);
+
+        TestNoise(noise, c_width, "out/bluePaniq");
+    }
+
     // generate blue noise by swapping white noise pixels to make it more blue
     {
         ScopedTimer timer("Blue noise by swapping white noise");
@@ -188,6 +202,8 @@ int main(int argc, char** argv)
 /*
 
 ================== TODO ==================
+
+* make red noise with paniq's technique
 
 For Swap Method...
 5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points

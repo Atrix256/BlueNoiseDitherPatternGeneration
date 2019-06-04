@@ -117,6 +117,7 @@
   <ItemGroup>
     <ClCompile Include="blur.cpp" />
     <ClCompile Include="generatebn_hpf.cpp" />
+    <ClCompile Include="generatebn_paniq.cpp" />
     <ClCompile Include="generatebn_swap.cpp" />
     <ClCompile Include="image.cpp" />
     <ClCompile Include="main.cpp" />
@@ -126,6 +127,7 @@
     <ClInclude Include="convert.h" />
     <ClInclude Include="dft.h" />
     <ClInclude Include="generatebn_hpf.h" />
+    <ClInclude Include="generatebn_paniq.h" />
     <ClInclude Include="generatebn_swap.h" />
     <ClInclude Include="histogram.h" />
     <ClInclude Include="image.h" />
