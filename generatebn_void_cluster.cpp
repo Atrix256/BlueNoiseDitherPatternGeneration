@@ -6,7 +6,7 @@
 #include "stb/stb_image_write.h"
 
 template <bool FindTightestCluster, bool ReverseMinorityMajority>
-static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY)
+static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPattern, size_t width, bool limitTo3Sigma, int &bestPixelX, int& bestPixelY)
 {
     static const float c_sigma = 1.5f;
     static const float c_2sigmaSquared = 2.0f * c_sigma * c_sigma;
@@ -18,6 +18,13 @@ static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPatt
     int offsetEnd = int(width) / 2;
     if ((width & 1) == 0)
         offsetEnd--;
+
+    // 99.7% of influence is within 3 sigma
+    if (limitTo3Sigma)
+    {
+        offsetStart = std::max(offsetStart, int(-c_sigma * 3.0f));
+        offsetEnd = std::max(offsetEnd, int(c_sigma * 3.0f));
+    }
 
     // find the pixel with the best score
     float bestPixelValue = FindTightestCluster ? -FLT_MAX : FLT_MAX;
@@ -62,6 +69,8 @@ static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPatt
         }
     }
 }
+
+#if SAVE_VOIDCLUSTER_INITIALBP()
 
 void SaveBinaryPattern(const std::vector<bool>& binaryPattern, size_t width, const char* baseFileName, int iterationCount, int tightestClusterX, int tightestClusterY, int largestVoidX, int largestVoidY)
 {
@@ -110,7 +119,9 @@ void SaveBinaryPattern(const std::vector<bool>& binaryPattern, size_t width, con
     stbi_write_png(fileName, int(width*c_scale), int(width*c_scale), 3, binaryPatternImage.data(), 0);
 }
 
-void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, const char* baseFileName)
+#endif
+
+void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, bool limitTo3Sigma, const char* baseFileName)
 {
     std::mt19937 rng(GetRNGSeed());
     std::uniform_int_distribution<size_t> dist(0, width*width);
@@ -124,7 +135,6 @@ void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, co
     }
 
     // TODO: multithread
-    // TODO: limit to a 3 sigma search area for the inner loops. make sure you get same results when you do this :)
 
     int iterationCount = 0;
     while (1)
@@ -134,7 +144,7 @@ void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, co
         // find the location of the tightest cluster
         int tightestClusterX = -1;
         int tightestClusterY = -1;
-        FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, tightestClusterX, tightestClusterY);
+        FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, limitTo3Sigma, tightestClusterX, tightestClusterY);
 
         // remove the 1 from the tightest cluster
         binaryPattern[tightestClusterY*width + tightestClusterX] = false;
@@ -142,13 +152,15 @@ void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, co
         // find the largest void
         int largestVoidX = -1;
         int largestVoidY = -1;
-        FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, largestVoidX, largestVoidY);
+        FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, limitTo3Sigma, largestVoidX, largestVoidY);
 
         // put the 1 in the largest void
         binaryPattern[largestVoidY*width + largestVoidX] = true;
 
+        #if SAVE_VOIDCLUSTER_INITIALBP()
         // save the binary pattern out for debug purposes
         SaveBinaryPattern(binaryPattern, width, baseFileName, iterationCount, tightestClusterX, tightestClusterY, largestVoidX, largestVoidY);
+        #endif
 
         // exit condition. the pattern is stable
         if (tightestClusterX == largestVoidX && tightestClusterY == largestVoidY)
@@ -157,7 +169,7 @@ void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, co
 }
 
 // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
-void Phase1(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width)
+void Phase1(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width, bool limitTo3Sigma)
 {
     // count how many ones there are
     size_t ones = 0;
@@ -171,7 +183,7 @@ void Phase1(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
     while (ones > 0)
     {
         int bestX, bestY;
-        FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, bestX, bestY);
+        FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, limitTo3Sigma, bestX, bestY);
         binaryPattern[bestY * width + bestX] = false;
         ones--;
         ranks[bestY*width + bestX] = ones;
@@ -179,7 +191,7 @@ void Phase1(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
 }
 
 // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
-void Phase2(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width)
+void Phase2(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width, bool limitTo3Sigma)
 {
     // count how many ones there are
     size_t ones = 0;
@@ -193,7 +205,7 @@ void Phase2(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
     while (ones <= (width*width/2))
     {
         int bestX, bestY;
-        FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, bestX, bestY);
+        FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, limitTo3Sigma, bestX, bestY);
         binaryPattern[bestY * width + bestX] = true;
         ranks[bestY*width + bestX] = ones;
         ones++;
@@ -201,7 +213,7 @@ void Phase2(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
 }
 
 // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
-void Phase3(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width)
+void Phase3(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width, bool limitTo3Sigma)
 {
     // count how many ones there are
     size_t ones = 0;
@@ -215,7 +227,7 @@ void Phase3(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
     while (1)
     {
         int bestX, bestY;
-        FindTightestClusterOrLargestVoid<true, true>(binaryPattern, width, bestX, bestY);
+        FindTightestClusterOrLargestVoid<true, true>(binaryPattern, width, limitTo3Sigma, bestX, bestY);
 
         // exit condition. all done!
         if (bestX < 0 || bestY < 0)
@@ -227,23 +239,23 @@ void Phase3(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t
     }
 }
 
-void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, const char* baseFileName)
+void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool limitTo3Sigma, const char* baseFileName)
 {
     // make the initial binary pattern
     std::vector<bool> initialBinaryPattern;
-    MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName);
+    MakeInitialBinaryPattern(initialBinaryPattern, width, limitTo3Sigma, baseFileName);
 
     // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
     std::vector<size_t> ranks(width*width, ~size_t(0));
     std::vector<bool> binaryPattern = initialBinaryPattern;
-    Phase1(binaryPattern, ranks, width);
+    Phase1(binaryPattern, ranks, width, limitTo3Sigma);
 
     // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
     binaryPattern = initialBinaryPattern;
-    Phase2(binaryPattern, ranks, width);
+    Phase2(binaryPattern, ranks, width, limitTo3Sigma);
 
     // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
-    Phase3(binaryPattern, ranks, width);
+    Phase3(binaryPattern, ranks, width, limitTo3Sigma);
 
     // convert to U8
     blueNoise.resize(width*width);

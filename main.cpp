@@ -110,11 +110,10 @@ int main(int argc, char** argv)
     {
         ScopedTimer timer("Blue noise by void and cluster");
 
-        static size_t c_width = 32;
+        static size_t c_width = 64;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC");
-
+        GenerateBN_Void_Cluster(noise, c_width, true, "out/blueVC");
         TestNoise(noise, c_width, "out/blueVC");
     }
 
@@ -272,6 +271,7 @@ Also do red noise?
 ================== NOTES ==================
 
 * for void and cluster, it'd be neat to show the evolution of the starting pattern with the red, green, yellow and white dots. Maybe a gif.
+* show timing of void and cluster as it scales up.  Show it for small resolutions not limiting it to 3 sigma, then crank it up when limiting to 3 sigma.
 
  * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
   * 1st is for like AO ray perterbation & ray march offsets
