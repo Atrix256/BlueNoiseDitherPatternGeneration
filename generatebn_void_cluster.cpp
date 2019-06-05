@@ -5,6 +5,9 @@
 #include "convert.h"
 #include "stb/stb_image_write.h"
 
+#include <thread>
+#include <atomic>
+
 template <bool FindTightestCluster, bool ReverseMinorityMajority>
 static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPattern, size_t width, bool limitTo3Sigma, int &bestPixelX, int& bestPixelY)
 {
@@ -26,46 +29,92 @@ static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPatt
         offsetEnd = std::max(offsetEnd, int(c_sigma * 3.0f));
     }
 
-    // find the pixel with the best score
-    float bestPixelValue = FindTightestCluster ? -FLT_MAX : FLT_MAX;
+    std::vector<std::thread> threads;
+    threads.resize(std::thread::hardware_concurrency());
+    std::atomic<size_t> atomicrow(0);
+    std::vector<float> energies(width, 0.0f);
+
+    // find the pixel with the best score in each row
     bestPixelX = -1;
     bestPixelY = -1;
-
-    for (int basey = 0; basey < width; ++basey)
+    struct BestPixel
     {
-        for (int basex = 0; basex < width; ++basex)
-        {
-            // Finding the tightest cluster means only considering minority pixels
-            // Finding the largest void means only considering majority pixels
-            bool isMinorityPixel = binaryPattern[basey*width + basex] == c_minorityPixel;
-            if (isMinorityPixel != FindTightestCluster)
-                continue;
+        float value;
+        int x, y;
+    };
+    std::vector<BestPixel> rowBestPixels(width, { FindTightestCluster ? -FLT_MAX : FLT_MAX, -1, -1 });
 
-            // calculate an energy type metric to find voids and clusters
-            float energy = 0.0f;
-            for (int iy = offsetStart; iy <= offsetEnd; ++iy)
+    // split the work among however many threads are available
+    for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
+    {
+        threads[threadIndex] = std::thread(
+            [width, offsetStart, offsetEnd, &atomicrow, &binaryPattern, &rowBestPixels]()
             {
-                int y = (basey + iy + int(width)) % int(width);
-                for (int ix = offsetStart; ix <= offsetEnd; ++ix)
+                // get first row to process
+                size_t row = atomicrow.fetch_add(1);
+
+                // process rows until we run out
+                while (row < width)
                 {
-                    int x = (basex + ix + int(width)) % int(width);
+                    int basey = int(row);
 
-                    // only minority pixels give energy
-                    if (binaryPattern[y*width + x] != c_minorityPixel)
-                        continue;
+                    for (int basex = 0; basex < width; ++basex)
+                    {
+                        // Finding the tightest cluster means only considering minority pixels
+                        // Finding the largest void means only considering majority pixels
+                        bool isMinorityPixel = binaryPattern[basey*width + basex] == c_minorityPixel;
+                        if (isMinorityPixel != FindTightestCluster)
+                            continue;
 
-                    float distanceSquared = float(ix*ix) + float(iy*iy);
-                    energy += exp(-distanceSquared / c_2sigmaSquared);
+                        // calculate an energy type metric to find voids and clusters
+                        float energy = 0.0f;
+                        for (int iy = offsetStart; iy <= offsetEnd; ++iy)
+                        {
+                            int y = (basey + iy + int(width)) % int(width);
+                            for (int ix = offsetStart; ix <= offsetEnd; ++ix)
+                            {
+                                int x = (basex + ix + int(width)) % int(width);
+
+                                // only minority pixels give energy
+                                if (binaryPattern[y*width + x] != c_minorityPixel)
+                                    continue;
+
+                                float distanceSquared = float(ix*ix) + float(iy*iy);
+                                energy += exp(-distanceSquared / c_2sigmaSquared);
+                            }
+                        }
+
+                        // keep track of which pixel had the highest energy
+                        if ((FindTightestCluster && energy > rowBestPixels[row].value) || (!FindTightestCluster && energy < rowBestPixels[row].value))
+                        {
+                            rowBestPixels[row].value = energy;
+                            rowBestPixels[row].x = basex;
+                            rowBestPixels[row].y = basey;
+                        }
+                    }
+
+                    // get next row to process
+                    row = atomicrow.fetch_add(1);
                 }
             }
+        );
+    }
 
-            // keep track of which pixel had the highest energy
-            if ((FindTightestCluster && energy > bestPixelValue) || (!FindTightestCluster && energy < bestPixelValue))
-            {
-                bestPixelValue = energy;
-                bestPixelX = basex;
-                bestPixelY = basey;
-            }
+    // wait for all threads to be done
+    for (std::thread& t : threads)
+        t.join();
+
+    // get the best from all rows
+    float bestValue = rowBestPixels[0].value;
+    bestPixelX = rowBestPixels[0].x;
+    bestPixelY = rowBestPixels[0].y;
+    for (size_t i = 1; i < rowBestPixels.size(); ++i)
+    {
+        if ((FindTightestCluster && rowBestPixels[i].value > bestValue) || (!FindTightestCluster && rowBestPixels[i].value < bestValue))
+        {
+            bestValue = rowBestPixels[i].value;
+            bestPixelX = rowBestPixels[i].x;
+            bestPixelY = rowBestPixels[i].y;
         }
     }
 }
@@ -133,8 +182,6 @@ void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, bo
         size_t pixel = dist(rng);
         binaryPattern[pixel] = true;
     }
-
-    // TODO: multithread
 
     int iterationCount = 0;
     while (1)
@@ -270,3 +317,4 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool
 
 // TODO: profile after doing 3 sigma limit
 // TODO: boost up resolution after speeding things up
+// TODO: show what phases it's doing and a percentage when possible
