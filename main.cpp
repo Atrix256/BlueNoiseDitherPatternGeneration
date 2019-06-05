@@ -110,8 +110,7 @@ int main(int argc, char** argv)
     {
         ScopedTimer timer("Blue noise by void and cluster");
 
-        static size_t c_width = 16;
-        static size_t c_iterations = 120;
+        static size_t c_width = 32;
 
         std::vector<uint8_t> noise;
         GenerateBN_Void_Cluster(noise, c_width);
