@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         static size_t c_width = 32;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width);
+        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC");
 
         TestNoise(noise, c_width, "out/blueVC");
     }
