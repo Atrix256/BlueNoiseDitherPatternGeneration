@@ -246,7 +246,6 @@ Paniq in regards to my LUT void and cluster on gpu
  * adding LUT to phase 1 dropped it to 23 seconds
  * adding LUT to phase 2 dropped it to 16 seconds.
  * adding LUT to phase 3 dropped it to 3.5 seconds.
- ! TODO: phase 3
  ! NOTE that LUT is single threaded!! The old way was multithreade
 
 
@@ -291,7 +290,13 @@ Also do red noise?
 * could show LUT images too
 * Without LUT, but 3 sigma and multithreaded. 30 seconds for 64x64. with LUT and single threaded drops it to 3.5 seconds!
 * with LUTs, 115 seconds for 256x256. 100 for initial binary pattern. 2 for phase1, 5 for phase2, 7 for phase 3.
-? what if doing mitchell's best candidate for initial binary pattern?
+ * If we can generate blue noise samples, that replaces "initial binary pattern" step.
+ * If we can generate progressive blue noise samples, that also replaces phase 1.
+ * I tried Mitchell's best candidate algorithm to replace these two steps and it is terrible.
+  * until i used a grid to speed up "find closest point".
+  * 256x256 with width*width/4 initial points.  using initial/phase 1: 55s total.  using mitchell's best candidate: 15s total!
+  * Mitchell's has a faint + sign in the middle of the DFT but meh whatever.
+ * I'm guessing that CCVD would do decently too at least for the "initial binary pattern" step. Phase 1 would still need to happen.
 
 
  * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
