@@ -334,5 +334,6 @@ paniq's thing, inspired by it but meant for use on the GPU. Implemented in shade
 * I haven't checked the DFT but to the eye it looks good. (should check DFT!)
 
 * void and cluster: http://cv.ulichney.com/papers/1993-void-cluster.pdf
+ * and this: http://momentsingraphics.de/?p=127#citation-ulichney93
 
 */
