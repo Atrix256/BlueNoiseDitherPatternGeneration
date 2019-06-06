@@ -238,6 +238,9 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
+Paniq in regards to my LUT void and cluster on gpu
+"there's often a parallelizable solution somewhere. in this case it looks like a pyramid histogram would once again save the day (that's the GPU version of map-reduce)"
+
 
 * Without LUT, but 3 sigma. 30 seconds for 64x64
  * adding LUT to phase 1 dropped it to 23 seconds
