@@ -110,16 +110,19 @@ int main(int argc, char** argv)
     {
         ScopedTimer timer("Blue noise by void and cluster");
 
-        static size_t c_width = 64;
+        static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
         GenerateBN_Void_Cluster(noise, c_width, "out/blueVC");
         TestNoise(noise, c_width, "out/blueVC");
     }
 
+    // TODO: profile and multithread void and cluster? see how it compares to paniq's timing!
+    // TODO: paniq was like 30s for 256x256. V & C is like 110 seconds. his is parallelizable, V & C isn't.
     // TODO: make void and cluster thing be bigger
 
     // TODO: temp!
+    system("pause");
     return 0;
 
     // generate blue noise by using paniq's technique
@@ -239,8 +242,9 @@ int main(int argc, char** argv)
 * Without LUT, but 3 sigma. 30 seconds for 64x64
  * adding LUT to phase 1 dropped it to 23 seconds
  * adding LUT to phase 2 dropped it to 16 seconds.
+ * adding LUT to phase 3 dropped it to 3.5 seconds.
  ! TODO: phase 3
- ! NOTE that LUT is single threaded!!
+ ! NOTE that LUT is single threaded!! The old way was multithreade
 
 
 ? can void and cluster make red noise?
@@ -282,7 +286,10 @@ Also do red noise?
 * for void and cluster, it'd be neat to show the evolution of the starting pattern with the red, green, yellow and white dots. Maybe a gif.
 * show timing of void and cluster as it scales up.  Show it for small resolutions not limiting it to 3 sigma, then crank it up when limiting to 3 sigma.
 * could show LUT images too
-* Without LUT, but 3 sigma. 30 seconds for 64x64
+* Without LUT, but 3 sigma and multithreaded. 30 seconds for 64x64. with LUT and single threaded drops it to 3.5 seconds!
+* with LUTs, 115 seconds for 256x256. 100 for initial binary pattern. 2 for phase1, 5 for phase2, 7 for phase 3.
+? what if doing mitchell's best candidate for initial binary pattern?
+
 
  * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
   * 1st is for like AO ray perterbation & ray march offsets
