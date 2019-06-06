@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         static size_t c_width = 64;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, true, "out/blueVC");
+        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC");
         TestNoise(noise, c_width, "out/blueVC");
     }
 
@@ -235,7 +235,16 @@ int main(int argc, char** argv)
 
 ================== TODO ==================
 
+
+* Without LUT, but 3 sigma. 30 seconds for 64x64
+ * adding LUT to phase 1 dropped it to 23 seconds
+ * adding LUT to phase 2 dropped it to 16 seconds.
+ ! TODO: phase 3
+ ! NOTE that LUT is single threaded!!
+
+
 ? can void and cluster make red noise?
+ * maybe if we randomize ties it can
 
 For Swap Method...
 5) 5th blue noise technique - best candidate algorithm. for a specific value, choose some number of them at random, pick whatever one is farthest from existing points
@@ -272,6 +281,8 @@ Also do red noise?
 
 * for void and cluster, it'd be neat to show the evolution of the starting pattern with the red, green, yellow and white dots. Maybe a gif.
 * show timing of void and cluster as it scales up.  Show it for small resolutions not limiting it to 3 sigma, then crank it up when limiting to 3 sigma.
+* could show LUT images too
+* Without LUT, but 3 sigma. 30 seconds for 64x64
 
  * blue noise dither pattern has 2 uses: screen space noise (needs to be blue) and thresholding (subsets need to be blue)
   * 1st is for like AO ray perterbation & ray march offsets
