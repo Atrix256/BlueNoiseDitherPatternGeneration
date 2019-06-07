@@ -236,7 +236,24 @@ int main(int argc, char** argv)
 
 /*
 
+* make a blog post on void and cluster by itself.
+* big optimizations:
+ 1) limit to 3 sigma
+ 2) use a LUT where you write your values.
+* also of note: compare it to mitchell's best candidate for speed and quality of generating sample points!
+ * mention how "initial binary pattern" makes blue noise distributed points, and "phase 1" makes it prorgessive.
+ * phase 1 could make other blue noise-esque distributed points progressive.
+
 ================== TODO ==================
+
+* probably can boost up the size of initial binary pattern again to width*width/4?
+
+* have V&C use LUT for initial binary pattern and compare time and quality vs mitchells
+ * 48 seconds total 256x256 not using lut for initial binary pattern setup
+ * 35 seconds for initial pattern. 364 seconds for phase 1
+ * with LUT -> 640 ms for initial binary pattern, 400 ms for phase 1
+  * vs 1800ms for mitchell's best candidate
+
 
 Paniq in regards to my LUT void and cluster on gpu
 "there's often a parallelizable solution somewhere. in this case it looks like a pyramid histogram would once again save the day (that's the GPU version of map-reduce)"

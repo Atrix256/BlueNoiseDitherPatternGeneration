@@ -303,13 +303,19 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
     std::mt19937 rng(GetRNGSeed());
     std::uniform_int_distribution<size_t> dist(0, width*width);
 
+    std::vector<float> LUT;
+    LUT.resize(width*width, 0.0f);
+
     binaryPattern.resize(width*width, false);
     size_t ones = width*width/16;
     for (size_t index = 0; index < ones; ++index)
     {
         size_t pixel = dist(rng);
         binaryPattern[pixel] = true;
+        WriteLUTValue(LUT, width, true, int(pixel % width), int(pixel / width));
     }
+
+    SaveLUTImage(binaryPattern, LUT, width, "out/_init.png");
 
     int iterationCount = 0;
     while (1)
@@ -320,18 +326,22 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
         // find the location of the tightest cluster
         int tightestClusterX = -1;
         int tightestClusterY = -1;
-        FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, tightestClusterX, tightestClusterY);
+        //FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, tightestClusterX, tightestClusterY);
+        FindTightestClusterLUT(LUT, binaryPattern, width, tightestClusterX, tightestClusterY);
 
         // remove the 1 from the tightest cluster
         binaryPattern[tightestClusterY*width + tightestClusterX] = false;
+        WriteLUTValue(LUT, width, false, tightestClusterX, tightestClusterY);
 
         // find the largest void
         int largestVoidX = -1;
         int largestVoidY = -1;
-        FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, largestVoidX, largestVoidY);
+        //FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, largestVoidX, largestVoidY);
+        FindLargestVoidLUT(LUT, binaryPattern, width, largestVoidX, largestVoidY);
 
         // put the 1 in the largest void
         binaryPattern[largestVoidY*width + largestVoidX] = true;
+        WriteLUTValue(LUT, width, true, largestVoidX, largestVoidY);
 
         #if SAVE_VOIDCLUSTER_INITIALBP()
         // save the binary pattern out for debug purposes
@@ -343,6 +353,8 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
             break;
     }
     printf("\n");
+
+    SaveBinaryPattern(binaryPattern, width, "out/_LUT_YES", 0, -1, -1, -1, -1);
 }
 
 // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
@@ -601,7 +613,7 @@ static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
 void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, const char* baseFileName)
 {
 
-#if 0
+#if 1
     // make the initial binary pattern
     std::vector<bool> initialBinaryPattern;
     MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName);
