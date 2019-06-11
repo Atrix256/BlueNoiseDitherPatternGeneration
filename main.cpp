@@ -23,10 +23,11 @@ void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* b
 {
     std::vector<uint8_t> thresholdImage(noise.size());
 
-    for (size_t testIndex = 0; testIndex < THRESHOLD_SAMPLES(); ++testIndex)
+    for (int thresholdValue_ = 0; thresholdValue_ < 256; ++thresholdValue_)
+    //for (size_t testIndex = 0; testIndex < THRESHOLD_SAMPLES(); ++testIndex)
     {
-        float percent = float(testIndex + 1) / float(THRESHOLD_SAMPLES() + 1);
-        uint8_t thresholdValue = FromFloat<uint8_t>(percent);
+        //float percent = float(testIndex + 1) / float(THRESHOLD_SAMPLES() + 1);
+        uint8_t thresholdValue = uint8_t(thresholdValue_);// FromFloat<uint8_t>(percent);
 
         for (size_t pixelIndex = 0, pixelCount = noise.size(); pixelIndex < pixelCount; ++pixelIndex)
             thresholdImage[pixelIndex] = noise[pixelIndex] > thresholdValue ? 255 : 0;
@@ -40,7 +41,7 @@ void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* b
         AppendImageHorizontal(thresholdImage, noiseSize, noiseSize, thresholdImageDFT, noiseSize, noiseSize, noiseAndDFT, noiseAndDFT_width, noiseAndDFT_height);
 
         char fileName[256];
-        sprintf(fileName, "%s_%u.png", baseFileName, unsigned(percent*100.0f));
+        sprintf(fileName, "%s_%u.png", baseFileName, thresholdValue);
         stbi_write_png(fileName, int(noiseAndDFT_width), int(noiseAndDFT_height), 1, noiseAndDFT.data(), 0);
     }
 }
@@ -235,6 +236,8 @@ int main(int argc, char** argv)
 }
 
 /*
+
+* maybe compare your thresholding and DFT to the "free blue noise textures" results?
 
 * make a blog post on void and cluster by itself.
 * big optimizations:

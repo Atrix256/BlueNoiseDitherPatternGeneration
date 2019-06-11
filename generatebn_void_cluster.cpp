@@ -50,11 +50,62 @@ static void SaveLUTImage(const std::vector<bool>& binaryPattern, std::vector<flo
     stbi_write_png(fileName, int(width*c_scale), int(width*c_scale), 3, image.data(), 0);
 }
 
-static bool FindTightestClusterLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY)
+#if 1
+
+template <bool CLUSTER>
+static bool FindWinnerLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY, std::mt19937& rng)
+{
+    float bestValue = CLUSTER ? -FLT_MAX : FLT_MAX;
+    std::vector<size_t> bestIndices;
+    for (size_t index = 0, count = LUT.size(); index < count; ++index)
+    {
+        if (binaryPattern[index] == CLUSTER)
+        {
+            if (LUT[index] == bestValue)
+            {
+                bestIndices.push_back(index);
+            }
+            else if ((CLUSTER == true && LUT[index] > bestValue) || (CLUSTER == false && LUT[index] < bestValue))
+            {
+                bestValue = LUT[index];
+                bestIndices.clear();
+                bestIndices.push_back(index);
+            }
+        }
+    }
+
+    if (bestIndices.size() == 0)
+        return false;
+
+    size_t bestIndex = bestIndices[0];
+    if (bestIndices.size() > 1)
+    {
+        std::uniform_int_distribution<size_t> dist(0, bestIndices.size() - 1);
+        bestIndex = bestIndices[dist(rng)];
+    }
+
+    bestPixelX = int(bestIndex % width);
+    bestPixelY = int(bestIndex / width);
+
+    return true;
+}
+
+static bool FindTightestClusterLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY, std::mt19937& rng)
+{
+    return FindWinnerLUT<true>(LUT, binaryPattern, width, bestPixelX, bestPixelY, rng);
+}
+
+static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY, std::mt19937& rng)
+{
+    return FindWinnerLUT<false>(LUT, binaryPattern, width, bestPixelX, bestPixelY, rng);
+}
+
+#else
+static bool FindTightestClusterLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY, std::mt19937& rn)
 {
     float bestValue = -FLT_MAX;
     size_t bestIndex = ~size_t(0);
-    for (size_t index = 1, count = LUT.size(); index < count; ++index)
+    for (size_t index = 0, count = LUT.size(); index < count; ++index)
     {
         if (binaryPattern[index] && LUT[index] > bestValue)
         {
@@ -72,11 +123,11 @@ static bool FindTightestClusterLUT(const std::vector<float>& LUT, const std::vec
     return true;
 }
 
-static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY)
+static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY, std::mt19937& rn)
 {
     float bestValue = FLT_MAX;
     size_t bestIndex = ~size_t(0);
-    for (size_t index = 1, count = LUT.size(); index < count; ++index)
+    for (size_t index = 0, count = LUT.size(); index < count; ++index)
     {
         if (!binaryPattern[index] && LUT[index] < bestValue)
         {
@@ -93,9 +144,30 @@ static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<
 
     return true;
 }
+#endif
 
 static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int basex, int basey)
 {
+    // TODO: 3 sigma may have been a bad idea...
+#if 0
+    for (size_t y = 0; y < width; ++y)
+    {
+        float disty = abs(float(y) - float(basey));
+        if (disty > float(width / 2))
+            disty = float(width) - disty;
+
+        for (size_t x = 0; x < width; ++x)
+        {
+            float distx = abs(float(x) - float(basex));
+            if (distx > float(width / 2))
+                distx = float(width) - distx;
+
+            float distanceSquared = float(distx*distx) + float(disty*disty);
+            float energy = exp(-distanceSquared / c_2sigmaSquared) * (value ? 1.0f : -1.0f);
+            LUT[y*width + x] += energy;
+        }
+    }
+#else
     // TODO: we should probably do +/- 3 sigma always but clamp to half width half height
 
     int offsetStart = -int(width) / 2;
@@ -121,6 +193,7 @@ static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int
             LUT[y*width + x] += energy;
         }
     }
+#endif
 }
 
 static void MakeLUT(const std::vector<bool>& binaryPattern, std::vector<float>& LUT, size_t width, bool writeOnes)
@@ -296,11 +369,10 @@ static void SaveBinaryPattern(const std::vector<bool>& binaryPattern, size_t wid
 
 #endif
 
-static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, const char* baseFileName)
+static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t width, const char* baseFileName, std::mt19937& rng)
 {
     ScopedTimer timer("Initial Pattern", false);
 
-    std::mt19937 rng(GetRNGSeed());
     std::uniform_int_distribution<size_t> dist(0, width*width);
 
     std::vector<float> LUT;
@@ -326,8 +398,7 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
         // find the location of the tightest cluster
         int tightestClusterX = -1;
         int tightestClusterY = -1;
-        //FindTightestClusterOrLargestVoid<true, false>(binaryPattern, width, tightestClusterX, tightestClusterY);
-        FindTightestClusterLUT(LUT, binaryPattern, width, tightestClusterX, tightestClusterY);
+        FindTightestClusterLUT(LUT, binaryPattern, width, tightestClusterX, tightestClusterY, rng);
 
         // remove the 1 from the tightest cluster
         binaryPattern[tightestClusterY*width + tightestClusterX] = false;
@@ -336,8 +407,7 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
         // find the largest void
         int largestVoidX = -1;
         int largestVoidY = -1;
-        //FindTightestClusterOrLargestVoid<false, false>(binaryPattern, width, largestVoidX, largestVoidY);
-        FindLargestVoidLUT(LUT, binaryPattern, width, largestVoidX, largestVoidY);
+        FindLargestVoidLUT(LUT, binaryPattern, width, largestVoidX, largestVoidY, rng);
 
         // put the 1 in the largest void
         binaryPattern[largestVoidY*width + largestVoidX] = true;
@@ -358,7 +428,7 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
 }
 
 // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
-static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width)
+static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width, std::mt19937& rng)
 {
     ScopedTimer timer("Phase 1", false);
 
@@ -377,7 +447,7 @@ static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
         printf("\r%i%%", int(100.0f * (1.0f - float(ones) / float(startingOnes))));
 
         int bestX, bestY;
-        FindTightestClusterLUT(LUT, binaryPattern, width, bestX, bestY);
+        FindTightestClusterLUT(LUT, binaryPattern, width, bestX, bestY, rng);
         binaryPattern[bestY * width + bestX] = false;
         WriteLUTValue(LUT, width, false, bestX, bestY);
         ones--;
@@ -550,7 +620,7 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
 }
 
 // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
-static void Phase2(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width)
+static void Phase2(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width, std::mt19937& rng)
 {
     ScopedTimer timer("Phase 2", false);
 
@@ -571,7 +641,7 @@ static void Phase2(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
         printf("\r%i%%", int(100.0f * float(onesDone) / float(onesToDo)));
 
         int bestX, bestY;
-        FindLargestVoidLUT(LUT, binaryPattern, width, bestX, bestY);
+        FindLargestVoidLUT(LUT, binaryPattern, width, bestX, bestY, rng);
         binaryPattern[bestY * width + bestX] = true;
         WriteLUTValue(LUT, width, true, bestX, bestY);
         ranks[bestY*width + bestX] = ones;
@@ -581,7 +651,7 @@ static void Phase2(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
 }
 
 // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
-static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width)
+static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width, std::mt19937& rng)
 {
     ScopedTimer timer("Phase 3", false);
 
@@ -597,7 +667,7 @@ static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
 
     // add 1 to the largest cluster of 0's repeatedly
     int bestX, bestY;
-    while (FindLargestVoidLUT(LUT, binaryPattern, width, bestX, bestY))
+    while (FindLargestVoidLUT(LUT, binaryPattern, width, bestX, bestY, rng))
     {
         size_t onesDone = ones - startingOnes;
         printf("\r%i%%", int(100.0f * float(onesDone) / float(onesToDo)));
@@ -612,18 +682,19 @@ static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
 
 void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, const char* baseFileName)
 {
+    std::mt19937 rng(GetRNGSeed());
 
 #if 1
     // make the initial binary pattern
     std::vector<bool> initialBinaryPattern;
-    MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName);
+    MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
 
     // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
     std::vector<size_t> ranks(width*width, ~size_t(0));
     std::vector<bool> binaryPattern = initialBinaryPattern;
     std::vector<float> LUT;
     MakeLUT(binaryPattern, LUT, width, true);
-    Phase1(binaryPattern, LUT, ranks, width);
+    Phase1(binaryPattern, LUT, ranks, width, rng);
 
 #else
 
@@ -641,11 +712,11 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
     // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
     binaryPattern = initialBinaryPattern;
     MakeLUT(binaryPattern, LUT, width, true);
-    Phase2(binaryPattern, LUT, ranks, width);
+    Phase2(binaryPattern, LUT, ranks, width, rng);
 
     // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
     MakeLUT(binaryPattern, LUT, width, false);
-    Phase3(binaryPattern, LUT, ranks, width);
+    Phase3(binaryPattern, LUT, ranks, width, rng);
 
     // convert to U8
     {
