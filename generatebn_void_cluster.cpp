@@ -9,7 +9,7 @@
 #include <thread>
 #include <atomic>
 
-static const float c_sigma = 1.5f;
+static const float c_sigma = 1.9f;// 1.5f;
 static const float c_2sigmaSquared = 2.0f * c_sigma * c_sigma;
 static const int c_3sigmaint = int(ceil(c_sigma * 3.0f));
 
@@ -78,11 +78,14 @@ static bool FindWinnerLUT(const std::vector<float>& LUT, const std::vector<bool>
         return false;
 
     size_t bestIndex = bestIndices[0];
+
+    /*
     if (bestIndices.size() > 1)
     {
         std::uniform_int_distribution<size_t> dist(0, bestIndices.size() - 1);
         bestIndex = bestIndices[dist(rng)];
     }
+    */
 
     bestPixelX = int(bestIndex % width);
     bestPixelY = int(bestIndex / width);
@@ -149,7 +152,7 @@ static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<
 static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int basex, int basey)
 {
     // TODO: 3 sigma may have been a bad idea...
-#if 0
+#if 1
     for (size_t y = 0; y < width; ++y)
     {
         float disty = abs(float(y) - float(basey));
@@ -379,7 +382,7 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
     LUT.resize(width*width, 0.0f);
 
     binaryPattern.resize(width*width, false);
-    size_t ones = width*width/16;
+    size_t ones = size_t(float(width*width) * 0.1f); // start 10% of the pixels as white
     for (size_t index = 0; index < ones; ++index)
     {
         size_t pixel = dist(rng);
@@ -428,7 +431,7 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
 }
 
 // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
-static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width, std::mt19937& rng)
+static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, std::vector<size_t>& ranks, size_t width, std::mt19937& rng, const char* baseFileName)
 {
     ScopedTimer timer("Phase 1", false);
 
@@ -452,6 +455,11 @@ static void Phase1(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
         WriteLUTValue(LUT, width, false, bestX, bestY);
         ones--;
         ranks[bestY*width + bestX] = ones;
+
+        #if SAVE_VOIDCLUSTER_PHASE1()
+        // save the binary pattern out for debug purposes
+        SaveBinaryPattern(binaryPattern, width, baseFileName, int(startingOnes - ones), bestX, bestY, -1, -1);
+        #endif
     }
     printf("\n");
 }
@@ -694,7 +702,7 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
     std::vector<bool> binaryPattern = initialBinaryPattern;
     std::vector<float> LUT;
     MakeLUT(binaryPattern, LUT, width, true);
-    Phase1(binaryPattern, LUT, ranks, width, rng);
+    Phase1(binaryPattern, LUT, ranks, width, rng, baseFileName);
 
 #else
 
@@ -721,15 +729,9 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
     // convert to U8
     {
         ScopedTimer timer("Converting to U8", false);
-
         blueNoise.resize(width*width);
-        double deltaQ = double(width*width - 1) / 255.0;
-        double multiplier = deltaQ / double(width*width);
         for (size_t index = 0; index < width*width; ++index)
-        {
-            float percent = float(ranks[index]) / float(width*width - 1);
-            blueNoise[index] = FromFloat<uint8_t>(percent);
-        }
+            blueNoise[index] = uint8_t(ranks[index] * 256 / (width*width));
     }
 }
 // TODO: for initial binary pattern AND phase 1, maybe do mitchell's best candidate algorithm, adding to rank and binary pattern as you go? then go straight to phase 2.

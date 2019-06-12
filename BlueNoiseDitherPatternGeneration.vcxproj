@@ -143,6 +143,7 @@
     <ClInclude Include="simple_fft\fft.hpp" />
     <ClInclude Include="simple_fft\fft_impl.hpp" />
     <ClInclude Include="simple_fft\fft_settings.h" />
+    <ClInclude Include="stb\stb_image.h" />
     <ClInclude Include="stb\stb_image_write.h" />
     <ClInclude Include="whitenoise.h" />
   </ItemGroup>

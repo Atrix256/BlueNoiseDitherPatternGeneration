@@ -47,6 +47,9 @@
     <ClInclude Include="image.h" />
     <ClInclude Include="generatebn_paniq.h" />
     <ClInclude Include="generatebn_void_cluster.h" />
+    <ClInclude Include="stb\stb_image.h">
+      <Filter>stb</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

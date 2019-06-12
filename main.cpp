@@ -19,6 +19,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb/stb_image_write.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+
 void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* baseFileName)
 {
     std::vector<uint8_t> thresholdImage(noise.size());
@@ -114,8 +117,25 @@ int main(int argc, char** argv)
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC");
-        TestNoise(noise, c_width, "out/blueVC");
+        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC_1_");
+        TestNoise(noise, c_width, "out/blueVC_1_");
+    }
+
+    // load a blue noise texture
+    {
+        ScopedTimer timer("Blue noise by void and cluster from loading the texture");
+
+        int width, height, channels;
+        uint8_t* image = stbi_load("bluenoise256.png", &width, &height, &channels, 0);
+
+        std::vector<uint8_t> noise;
+        noise.reserve(width*height);
+        for (int i = 0; i < width*height; ++i)
+            noise.push_back(image[i*channels]);
+
+        stbi_image_free(image);
+
+        TestNoise(noise, width, "out/blueVC_2_");
     }
 
     // TODO: profile and multithread void and cluster? see how it compares to paniq's timing!
