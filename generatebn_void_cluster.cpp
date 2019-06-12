@@ -699,7 +699,7 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
 {
     std::mt19937 rng(GetRNGSeed());
 
-#if 0
+#if 1
     // make the initial binary pattern
     std::vector<bool> initialBinaryPattern;
     MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);

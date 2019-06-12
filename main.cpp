@@ -114,7 +114,7 @@ int main(int argc, char** argv)
     {
         ScopedTimer timer("Blue noise by void and cluster");
 
-        static size_t c_width = 128;
+        static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
         GenerateBN_Void_Cluster(noise, c_width, "out/blueVC_1_");
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         ScopedTimer timer("Blue noise by void and cluster from loading the texture");
 
         int width, height, channels;
-        uint8_t* image = stbi_load("bluenoise64.png", &width, &height, &channels, 0);
+        uint8_t* image = stbi_load("bluenoise256.png", &width, &height, &channels, 0);
 
         std::vector<uint8_t> noise;
         noise.reserve(width*height);
@@ -256,6 +256,9 @@ int main(int argc, char** argv)
 }
 
 /*
+
+* maybe could multithread LUT writing & generation since not doing DFT/IDFT?
+ * could maybe do DFT/IDFT??!
 
 * maybe compare your thresholding and DFT to the "free blue noise textures" results?
 
