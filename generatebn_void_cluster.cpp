@@ -472,7 +472,7 @@ struct Point
 typedef std::vector<Point> TPoints;
 typedef std::vector<TPoints> TPointGrid;
 
-static bool DistanceSqToClosestPoint(const TPoints& points, const Point& point, float& minDistSq)
+static bool DistanceSqToClosestPoint(const TPoints& points, const Point& point, float& minDistSq, size_t width)
 {
     if (points.size() == 0)
         return false;
@@ -480,8 +480,15 @@ static bool DistanceSqToClosestPoint(const TPoints& points, const Point& point, 
     // calculate the closest distance from this point to an existing sample
     for (const Point& p : points)
     {
-        float distx = float(p.x) - float(point.x);
-        float disty = float(p.y) - float(point.y);
+        float distx = std::abs(float(p.x) - float(point.x));
+        float disty = std::abs(float(p.y) - float(point.y));
+
+        if (distx > float(width) / 2.0f)
+            distx = float(width) - distx;
+
+        if (disty > float(width) / 2.0f)
+            disty = float(width) - disty;
+
         float distSq = distx * distx + disty * disty;
         if (distSq < minDistSq)
             minDistSq = distSq;
@@ -489,7 +496,7 @@ static bool DistanceSqToClosestPoint(const TPoints& points, const Point& point, 
     return true;
 }
 
-static float DistanceSqToClosestPoint(const TPointGrid& grid, size_t cellCount, size_t cellSize, const Point& point)
+static float DistanceSqToClosestPoint(const TPointGrid& grid, size_t cellCount, size_t cellSize, const Point& point, size_t width)
 {
     const int basex = int(point.x / cellSize);
     const int basey = int(point.y / cellSize);
@@ -510,11 +517,11 @@ static float DistanceSqToClosestPoint(const TPointGrid& grid, size_t cellCount, 
 
                 int offsetY = -radius;
                 int y = int(basey + offsetY + cellCount) % int(cellCount);
-                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq);
+                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq, width);
 
                 offsetY = radius;
                 y = int(basey + offsetY + cellCount) % int(cellCount);
-                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq);
+                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq, width);
             }
         }
 
@@ -526,11 +533,11 @@ static float DistanceSqToClosestPoint(const TPointGrid& grid, size_t cellCount, 
 
                 int offsetX = -radius;
                 int x = int(basex + offsetX + cellCount) % int(cellCount);
-                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq);
+                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq, width);
 
                 offsetX = +radius;
                 x = int(basex + offsetX + cellCount) % int(cellCount);
-                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq);
+                foundAPoint |= DistanceSqToClosestPoint(grid[y*cellCount + x], point, minDistSq, width);
             }
         }
 
@@ -565,7 +572,7 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
     ScopedTimer timer("Mitchells Best Candidate", false);
 
     std::mt19937 rng(GetRNGSeed());
-    std::uniform_int_distribution<size_t> dist(0, width*width);
+    std::uniform_int_distribution<size_t> dist(0, width*width - 1);
 
     binaryPattern.resize(width*width, false);
     ranks.resize(width*width, ~size_t(0));
@@ -578,7 +585,7 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
 
     // TODO: V&C timings had this at width*width/4.  It seems better to have it here at /16. need to compare timing vs V&C though for same amount.
 
-    size_t ones = width * width / 16;
+    size_t ones = size_t(float(width * width)*0.1f);
     for (size_t i = 0; i < ones; ++i)
     {
         printf("\r%i%%", int(100.0f * float(i) / float(ones - 1)));
@@ -596,7 +603,7 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
             c.x = index % width;
             c.y = index / width;
 
-            float minDistSq = DistanceSqToClosestPoint(grid, gridCellCount, gridCellSize, c);
+            float minDistSq = DistanceSqToClosestPoint(grid, gridCellCount, gridCellSize, c, width);
 
             /*
             // calculate the closest distance from this point to an existing sample
@@ -692,7 +699,7 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
 {
     std::mt19937 rng(GetRNGSeed());
 
-#if 1
+#if 0
     // make the initial binary pattern
     std::vector<bool> initialBinaryPattern;
     MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
