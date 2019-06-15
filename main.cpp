@@ -75,24 +75,6 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
-    // TODO: move this down!
-
-    // generate blue noise by using paniq's second technique
-    {
-        ScopedTimer timer("Blue noise by paniq2");
-
-        static size_t c_width = 256;
-
-        std::vector<uint8_t> noise;
-        GenerateBN_Paniq2(noise, c_width);
-
-        TestNoise(noise, c_width, "out/bluePaniq2");
-    }
-
-    // TODO: temp!
-    system("pause");
-    return 0;
-
     // generate some white noise
     {
         ScopedTimer timer("White noise");
@@ -184,6 +166,18 @@ int main(int argc, char** argv)
         TestNoise(noise, c_width, "out/redPaniq");
     }
 
+    // generate blue noise by using paniq's second technique
+    {
+        ScopedTimer timer("Blue noise by paniq2");
+
+        static size_t c_width = 256;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Paniq2(noise, c_width);
+
+        TestNoise(noise, c_width, "out/bluePaniq2");
+    }
+
     // generate blue noise by swapping white noise pixels to make it more blue
     {
         ScopedTimer timer("Blue noise by swapping white noise");
@@ -269,13 +263,11 @@ int main(int argc, char** argv)
 
 /*
 
-? can paniq2 make red noise?
-
+thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
 
 * maybe could multithread LUT writing & generation since not doing DFT/IDFT?
  * could maybe do DFT/IDFT??!
 
-* maybe compare your thresholding and DFT to the "free blue noise textures" results?
 
 * make a blog post on void and cluster by itself.
 * big optimizations:

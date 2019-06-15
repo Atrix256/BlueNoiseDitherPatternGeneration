@@ -151,8 +151,6 @@ static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<
 
 static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int basex, int basey)
 {
-    // TODO: 3 sigma may have been a bad idea...
-#if 1
     for (size_t y = 0; y < width; ++y)
     {
         float disty = abs(float(y) - float(basey));
@@ -170,33 +168,6 @@ static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int
             LUT[y*width + x] += energy;
         }
     }
-#else
-    // TODO: we should probably do +/- 3 sigma always but clamp to half width half height
-
-    int offsetStart = -int(width) / 2;
-    int offsetEnd = int(width) / 2;
-    if ((width & 1) == 0)
-        offsetEnd--;
-
-    // 99.7% of influence is within 3 sigma
-    offsetStart = std::max(offsetStart, -c_3sigmaint);
-    offsetEnd = std::min(offsetEnd, c_3sigmaint);
-
-    // add or subtract the energy from this pixel
-    for (int offsetY = offsetStart; offsetY <= offsetEnd; ++offsetY)
-    {
-        int y = (basey + offsetY + int(width)) % int(width);
-
-        for (int offsetX = offsetStart; offsetX <= offsetEnd; ++offsetX)
-        {
-            int x = (basex + offsetX + int(width)) % int(width);
-
-            float distanceSquared = float(offsetX*offsetX) + float(offsetY*offsetY);
-            float energy = exp(-distanceSquared / c_2sigmaSquared) * (value ? 1.0f : -1.0f);
-            LUT[y*width + x] += energy;
-        }
-    }
-#endif
 }
 
 static void MakeLUT(const std::vector<bool>& binaryPattern, std::vector<float>& LUT, size_t width, bool writeOnes)
@@ -210,113 +181,6 @@ static void MakeLUT(const std::vector<bool>& binaryPattern, std::vector<float>& 
             int x = int(index % width);
             int y = int(index / width);
             WriteLUTValue(LUT, width, writeOnes, x, y);
-        }
-    }
-}
-
-template <bool FindTightestCluster, bool ReverseMinorityMajority>
-static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPattern, size_t width, int &bestPixelX, int& bestPixelY)
-{
-    static const bool c_minorityPixel = ReverseMinorityMajority ? false : true;
-    static const bool c_majorityPixel = ReverseMinorityMajority ? true : false;
-
-    // TODO: we should probably do +/- 3 sigma always but clamp to half width half height
-
-    int offsetStart = -int(width) / 2;
-    int offsetEnd = int(width) / 2;
-    if ((width & 1) == 0)
-        offsetEnd--;
-
-    // 99.7% of influence is within 3 sigma
-    offsetStart = std::max(offsetStart, -c_3sigmaint);
-    offsetEnd = std::min(offsetEnd, c_3sigmaint);
-
-    std::vector<std::thread> threads;
-    threads.resize(std::thread::hardware_concurrency());
-    std::atomic<size_t> atomicrow(0);
-    std::vector<float> energies(width, 0.0f);
-
-    // find the pixel with the best score in each row
-    bestPixelX = -1;
-    bestPixelY = -1;
-    struct BestPixel
-    {
-        float value;
-        int x, y;
-    };
-    std::vector<BestPixel> rowBestPixels(width, { FindTightestCluster ? -FLT_MAX : FLT_MAX, -1, -1 });
-
-    // split the work among however many threads are available
-    for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
-    {
-        threads[threadIndex] = std::thread(
-            [width, offsetStart, offsetEnd, &atomicrow, &binaryPattern, &rowBestPixels]()
-            {
-                // get first row to process
-                size_t row = atomicrow.fetch_add(1);
-
-                // process rows until we run out
-                while (row < width)
-                {
-                    int basey = int(row);
-
-                    for (int basex = 0; basex < width; ++basex)
-                    {
-                        // Finding the tightest cluster means only considering minority pixels
-                        // Finding the largest void means only considering majority pixels
-                        bool isMinorityPixel = binaryPattern[basey*width + basex] == c_minorityPixel;
-                        if (isMinorityPixel != FindTightestCluster)
-                            continue;
-
-                        // calculate an energy type metric to find voids and clusters
-                        float energy = 0.0f;
-                        for (int iy = offsetStart; iy <= offsetEnd; ++iy)
-                        {
-                            int y = (basey + iy + int(width)) % int(width);
-                            for (int ix = offsetStart; ix <= offsetEnd; ++ix)
-                            {
-                                int x = (basex + ix + int(width)) % int(width);
-
-                                // only minority pixels give energy
-                                if (binaryPattern[y*width + x] != c_minorityPixel)
-                                    continue;
-
-                                float distanceSquared = float(ix*ix) + float(iy*iy);
-                                energy += exp(-distanceSquared / c_2sigmaSquared);
-                            }
-                        }
-
-                        // keep track of which pixel had the highest energy
-                        if ((FindTightestCluster && energy > rowBestPixels[row].value) || (!FindTightestCluster && energy < rowBestPixels[row].value))
-                        {
-                            rowBestPixels[row].value = energy;
-                            rowBestPixels[row].x = basex;
-                            rowBestPixels[row].y = basey;
-                        }
-                    }
-
-                    // get next row to process
-                    row = atomicrow.fetch_add(1);
-                }
-            }
-        );
-    }
-
-    // wait for all threads to be done
-    for (std::thread& t : threads)
-        t.join();
-
-    // get the best from all rows
-    float bestValue = rowBestPixels[0].value;
-    bestPixelX = rowBestPixels[0].x;
-    bestPixelY = rowBestPixels[0].y;
-    for (size_t i = 1; i < rowBestPixels.size(); ++i)
-    {
-        if ((FindTightestCluster && rowBestPixels[i].value > bestValue) || (!FindTightestCluster && rowBestPixels[i].value < bestValue))
-        {
-            bestValue = rowBestPixels[i].value;
-            bestPixelX = rowBestPixels[i].x;
-            bestPixelY = rowBestPixels[i].y;
         }
     }
 }
@@ -561,7 +425,7 @@ static void AddPointToPointGrid(TPointGrid& grid, size_t cellCount, size_t cellS
 // This replaces "Initial Binary Pattern" and "Phase 1" in the void and cluster algorithm.
 // Initial binary pattern makes blue noise distributed points.
 // Phase 1 makes them be progressive, so any points from 0 to N are blue noise.
-// Mitchell's best candidate algorithm makes progressive blue noise faster than those two steps do it.
+// Mitchell's best candidate algorithm makes progressive blue noise so can be used instead of those 2 steps.
 // https://blog.demofox.org/2017/10/20/generating-blue-noise-sample-points-with-mitchells-best-candidate-algorithm/
 static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector<size_t>& ranks, size_t width)
 {
@@ -576,10 +440,6 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
     static const size_t gridCellCount = 32;
     TPointGrid grid(gridCellCount*gridCellCount);
     const size_t gridCellSize = width / gridCellCount;
-
-    //std::vector<Point> points;
-
-    // TODO: V&C timings had this at width*width/4.  It seems better to have it here at /16. need to compare timing vs V&C though for same amount.
 
     size_t ones = size_t(float(width * width)*0.1f);
     for (size_t i = 0; i < ones; ++i)
@@ -601,19 +461,6 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
 
             float minDistSq = DistanceSqToClosestPoint(grid, gridCellCount, gridCellSize, c, width);
 
-            /*
-            // calculate the closest distance from this point to an existing sample
-            float minDistSq = FLT_MAX;
-            for (const Point& p : points)
-            {
-                float distx = float(p.x - c.x);
-                float disty = float(p.y - c.y);
-                float distSq = distx * distx + disty * disty;
-                if (distSq < minDistSq)
-                    minDistSq = distSq;
-            }
-            */
-
             if (minDistSq > bestDistanceSq)
             {
                 bestDistanceSq = minDistSq;
@@ -624,7 +471,6 @@ static void MitchellsBestCandidate(std::vector<bool>& binaryPattern, std::vector
         // take the best candidate
         binaryPattern[best.y * width + best.x] = true;
         ranks[best.y * width + best.x] = i;
-        //points.push_back(best);
         AddPointToPointGrid(grid, gridCellCount, gridCellSize, best);
     }
     printf("\n");
@@ -695,29 +541,24 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
 {
     std::mt19937 rng(GetRNGSeed());
 
+    std::vector<bool> initialBinaryPattern;
+    std::vector<size_t> ranks(width*width, ~size_t(0));
+    std::vector<bool> binaryPattern;
+    std::vector<float> LUT;
+
 #if 1
     // make the initial binary pattern
-    std::vector<bool> initialBinaryPattern;
     MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
 
     // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
-    std::vector<size_t> ranks(width*width, ~size_t(0));
-    std::vector<bool> binaryPattern = initialBinaryPattern;
-    std::vector<float> LUT;
+    binaryPattern = initialBinaryPattern;
     MakeLUT(binaryPattern, LUT, width, true);
     Phase1(binaryPattern, LUT, ranks, width, rng, baseFileName);
-
 #else
 
     // replace initial binary pattern and phase 1 with Mitchell's best candidate algorithm
-    std::vector<bool> initialBinaryPattern;
-    std::vector<size_t> ranks;
     MitchellsBestCandidate(initialBinaryPattern, ranks, width);
-    SaveBinaryPattern(initialBinaryPattern, width, "out/_blah", 0, -1, -1, -1, -1);
-
-    // TODO: put these under phase 2 after you get rid of the other
-    std::vector<bool> binaryPattern;
-    std::vector<float> LUT;
+    //SaveBinaryPattern(initialBinaryPattern, width, "out/_blah", 0, -1, -1, -1, -1);
 #endif
 
     // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
@@ -737,12 +578,6 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
             blueNoise[index] = uint8_t(ranks[index] * 256 / (width*width));
     }
 }
-// TODO: for initial binary pattern AND phase 1, maybe do mitchell's best candidate algorithm, adding to rank and binary pattern as you go? then go straight to phase 2.
 
-// TODO: the histogram has 256's except for first and last value which are 255 and 257 respectively. Fix and check in results. Maybe wait to check in post profiling though.
-// TODO: profile after doing 3 sigma limit
-// TODO: boost up resolution after speeding things up
-// TODO: show what phases it's doing and a percentage when possible
-// TODO: round 3 sigma up.
-// TODO: make a LUT instead of running the full scan each frame
-// TODO: test it at the lowest and highest threshold levels to make sure it's g2g. Basically need to randomize ties. https://twitter.com/atrix256/status/1136391416395980800?s=12
+// TODO: retest speed and quality vs mitchell's best candidate. maybe run both?
+// thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
