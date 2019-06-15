@@ -1,140 +1,14 @@
 #include "convert.h"
 #include "generatebn_paniq.h"
 #include "whitenoise.h"
+#include "vec.h"
 
 #include <thread>
 #include <atomic>
-#include <array>
 
 #define R2 19
 #define SIGMA 1.414f
 #define M_PI 3.14159265359f
-
-typedef std::array<float, 2> vec2;
-typedef std::array<float, 3> vec3;
-typedef std::array<float, 4> vec4;
-typedef std::array<int, 2> ivec2;
-
-template <size_t N>
-std::array<float, N> operator* (const std::array<float, N>& A, const std::array<float, N>& B)
-{
-    std::array<float, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] * B[i];
-    return ret;
-}
-
-template <typename T, size_t N>
-std::array<T, N> operator+ (const std::array<T, N>& A, const std::array<T, N>& B)
-{
-    std::array<T, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] + B[i];
-    return ret;
-}
-
-template <size_t N>
-std::array<int, N> operator^ (const std::array<int, N>& A, const std::array<int, N>& B)
-{
-    std::array<int, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] ^ B[i];
-    return ret;
-}
-
-template <size_t N>
-std::array<int, N> operator% (const std::array<int, N>& A, const std::array<int, N>& B)
-{
-    std::array<int, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] % B[i];
-    return ret;
-}
-
-template <size_t N>
-std::array<float, N> operator+ (const std::array<float, N>& A, float B)
-{
-    std::array<float, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] + B;
-    return ret;
-}
-
-template <size_t N>
-std::array<float, N> operator* (const std::array<float, N>& A, float B)
-{
-    std::array<float, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = A[i] * B;
-    return ret;
-}
-
-template <size_t N>
-std::array<float, N> fract(const std::array<float, N>& A)
-{
-    std::array<float, N> ret;
-    for (size_t i = 0; i < N; ++i)
-        ret[i] = std::fmodf(A[i], 1.0f);
-    return ret;
-}
-
-float fract(float A)
-{
-    return std::fmodf(A, 1.0f);
-}
-
-float max(float A, float B)
-{
-    return std::max(A, B);
-}
-
-template <size_t N>
-float dot(const std::array<float, N>& A, const std::array<float, N>& B)
-{
-    float ret = 0.0f;
-    for (size_t i = 0; i < N; ++i)
-        ret += A[i] * B[i];
-    return ret;
-}
-
-template <size_t N>
-float length(const std::array<float, N>& A)
-{
-    float lengthSq = 0.0f;
-    for (size_t i = 0; i < N; ++i)
-        lengthSq += A[i] * A[i];
-    return std::sqrtf(lengthSq);
-}
-
-float clamp(float value, float min, float max)
-{
-    if (value <= min)
-        return min;
-    else if (value >= max)
-        return max;
-    else
-        return value;
-}
-
-std::array<float, 3> yzx(const std::array<float, 3>& A)
-{
-    return { A[1], A[2], A[0] };
-}
-
-std::array<float, 2> xx(const std::array<float, 3>& A)
-{
-    return { A[0], A[0] };
-}
-
-std::array<float, 2> yz(const std::array<float, 3>& A)
-{
-    return { A[1], A[2] };
-}
-
-std::array<float, 2> zy(const std::array<float, 3>& A)
-{
-    return { A[2], A[1] };
-}
 
 vec2 hash21(float p)
 {

@@ -8,6 +8,7 @@
 #include "dft.h"
 #include "generatebn_hpf.h"
 #include "generatebn_paniq.h"
+#include "generatebn_paniq2.h"
 #include "generatebn_swap.h"
 #include "generatebn_void_cluster.h"
 #include "histogram.h"
@@ -74,6 +75,24 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
+    // TODO: move this down!
+
+    // generate blue noise by using paniq's second technique
+    {
+        ScopedTimer timer("Blue noise by paniq2");
+
+        static size_t c_width = 256;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Paniq2(noise, c_width);
+
+        TestNoise(noise, c_width, "out/bluePaniq2");
+    }
+
+    // TODO: temp!
+    system("pause");
+    return 0;
+
     // generate some white noise
     {
         ScopedTimer timer("White noise");
@@ -108,7 +127,7 @@ int main(int argc, char** argv)
         std::vector<uint8_t> noise;
         GenerateBN_HPF(noise, c_width, 5, 1.0f, true);
 
-        TestNoise(noise, c_width, "out/redHPF");
+        TestNoise(noise, c_width, "out/redLPF");
     }
 
     // generate blue noise using void and cluster
@@ -118,8 +137,8 @@ int main(int argc, char** argv)
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC_1_");
-        TestNoise(noise, c_width, "out/blueVC_1_");
+        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC_1");
+        TestNoise(noise, c_width, "out/blueVC_1");
     }
 
     // load a blue noise texture
@@ -136,10 +155,10 @@ int main(int argc, char** argv)
 
         stbi_image_free(image);
 
-        TestNoise(noise, width, "out/blueVC_2_");
+        TestNoise(noise, width, "out/blueVC_2");
     }
 
-    // generate blue noise by using paniq's technique
+    // generate blue noise by using paniq's first technique
     {
         ScopedTimer timer("Blue noise by paniq");
 
@@ -152,7 +171,7 @@ int main(int argc, char** argv)
         TestNoise(noise, c_width, "out/bluePaniq");
     }
 
-    // generate red noise by using paniq's technique
+    // generate red noise by using paniq's first technique
     {
         ScopedTimer timer("Red noise by paniq");
 
@@ -164,10 +183,6 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/redPaniq");
     }
-
-    // TODO: temp!
-    //system("pause");
-    //return 0;
 
     // generate blue noise by swapping white noise pixels to make it more blue
     {
@@ -253,6 +268,9 @@ int main(int argc, char** argv)
 }
 
 /*
+
+? can paniq2 make red noise?
+
 
 * maybe could multithread LUT writing & generation since not doing DFT/IDFT?
  * could maybe do DFT/IDFT??!

@@ -8,6 +8,7 @@
     <ClCompile Include="image.cpp" />
     <ClCompile Include="generatebn_paniq.cpp" />
     <ClCompile Include="generatebn_void_cluster.cpp" />
+    <ClCompile Include="generatebn_paniq2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simple_fft\check_fft.hpp">
@@ -50,6 +51,8 @@
     <ClInclude Include="stb\stb_image.h">
       <Filter>stb</Filter>
     </ClInclude>
+    <ClInclude Include="generatebn_paniq2.h" />
+    <ClInclude Include="vec.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

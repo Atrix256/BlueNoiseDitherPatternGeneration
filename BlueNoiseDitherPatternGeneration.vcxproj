@@ -118,6 +118,7 @@
     <ClCompile Include="blur.cpp" />
     <ClCompile Include="generatebn_hpf.cpp" />
     <ClCompile Include="generatebn_paniq.cpp" />
+    <ClCompile Include="generatebn_paniq2.cpp" />
     <ClCompile Include="generatebn_swap.cpp" />
     <ClCompile Include="generatebn_void_cluster.cpp" />
     <ClCompile Include="image.cpp" />
@@ -129,6 +130,7 @@
     <ClInclude Include="dft.h" />
     <ClInclude Include="generatebn_hpf.h" />
     <ClInclude Include="generatebn_paniq.h" />
+    <ClInclude Include="generatebn_paniq2.h" />
     <ClInclude Include="generatebn_swap.h" />
     <ClInclude Include="generatebn_void_cluster.h" />
     <ClInclude Include="histogram.h" />
@@ -145,6 +147,7 @@
     <ClInclude Include="simple_fft\fft_settings.h" />
     <ClInclude Include="stb\stb_image.h" />
     <ClInclude Include="stb\stb_image_write.h" />
+    <ClInclude Include="vec.h" />
     <ClInclude Include="whitenoise.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
