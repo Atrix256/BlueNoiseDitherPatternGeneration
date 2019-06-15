@@ -583,5 +583,5 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool
 }
 
 // TODO: retest speed and quality vs mitchell's best candidate. maybe run both?  it was like 3400 seconds vs 4100 seconds. rerun and get exact numbers!
-// Compare quality too.
+// Compare quality too. if there's ANY less quality would want to avoid it probably though.
 // thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
