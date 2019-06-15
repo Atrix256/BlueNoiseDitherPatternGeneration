@@ -119,8 +119,19 @@ int main(int argc, char** argv)
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, "out/blueVC_1");
+        GenerateBN_Void_Cluster(noise, c_width, false, "out/blueVC_1");
         TestNoise(noise, c_width, "out/blueVC_1");
+    }
+
+    // generate blue noise using void and cluster but using mitchell's best candidate instead of initial binary pattern and phase 1
+    {
+        ScopedTimer timer("Blue noise by void and cluster with Mitchells best candidate");
+
+        static size_t c_width = 256;
+
+        std::vector<uint8_t> noise;
+        GenerateBN_Void_Cluster(noise, c_width, true, "out/blueVC_1M");
+        TestNoise(noise, c_width, "out/blueVC_1M");
     }
 
     // load a blue noise texture

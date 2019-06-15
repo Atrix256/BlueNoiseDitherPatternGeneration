@@ -537,7 +537,7 @@ static void Phase3(std::vector<bool>& binaryPattern, std::vector<float>& LUT, st
     printf("\n");
 }
 
-void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, const char* baseFileName)
+void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool useMitchellsBestCandidate, const char* baseFileName)
 {
     std::mt19937 rng(GetRNGSeed());
 
@@ -546,20 +546,23 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
     std::vector<bool> binaryPattern;
     std::vector<float> LUT;
 
-#if 1
-    // make the initial binary pattern
-    MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
+    if (!useMitchellsBestCandidate)
+    {
+        // make the initial binary pattern
+        MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
 
-    // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
-    binaryPattern = initialBinaryPattern;
-    MakeLUT(binaryPattern, LUT, width, true);
-    Phase1(binaryPattern, LUT, ranks, width, rng, baseFileName);
-#else
+        // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
+        binaryPattern = initialBinaryPattern;
+        MakeLUT(binaryPattern, LUT, width, true);
+        Phase1(binaryPattern, LUT, ranks, width, rng, baseFileName);
+    }
+    else
+    {
+        // replace initial binary pattern and phase 1 with Mitchell's best candidate algorithm
+        MitchellsBestCandidate(initialBinaryPattern, ranks, width);
 
-    // replace initial binary pattern and phase 1 with Mitchell's best candidate algorithm
-    MitchellsBestCandidate(initialBinaryPattern, ranks, width);
-    //SaveBinaryPattern(initialBinaryPattern, width, "out/_blah", 0, -1, -1, -1, -1);
-#endif
+        //SaveBinaryPattern(initialBinaryPattern, width, "out/_blah", 0, -1, -1, -1, -1);
+    }
 
     // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
     binaryPattern = initialBinaryPattern;
@@ -579,5 +582,6 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, cons
     }
 }
 
-// TODO: retest speed and quality vs mitchell's best candidate. maybe run both?
+// TODO: retest speed and quality vs mitchell's best candidate. maybe run both?  it was like 3400 seconds vs 4100 seconds. rerun and get exact numbers!
+// Compare quality too.
 // thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
