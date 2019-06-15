@@ -13,7 +13,6 @@ static const float c_sigma = 1.9f;// 1.5f;
 static const float c_2sigmaSquared = 2.0f * c_sigma * c_sigma;
 static const int c_3sigmaint = int(ceil(c_sigma * 3.0f));
 
-// TODO: temp?
 static void SaveLUTImage(const std::vector<bool>& binaryPattern, std::vector<float>& LUT, size_t width, const char* fileName)
 {
     // get the LUT min and max
@@ -79,6 +78,7 @@ static bool FindWinnerLUT(const std::vector<float>& LUT, const std::vector<bool>
 
     size_t bestIndex = bestIndices[0];
 
+    // can randomize the winners
     /*
     if (bestIndices.size() > 1)
     {
@@ -321,7 +321,7 @@ static void FindTightestClusterOrLargestVoid(const std::vector<bool>& binaryPatt
     }
 }
 
-#if true//SAVE_VOIDCLUSTER_INITIALBP()
+#if SAVE_VOIDCLUSTER_INITIALBP()
 
 static void SaveBinaryPattern(const std::vector<bool>& binaryPattern, size_t width, const char* baseFileName, int iterationCount, int tightestClusterX, int tightestClusterY, int largestVoidX, int largestVoidY)
 {
@@ -390,8 +390,6 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
         WriteLUTValue(LUT, width, true, int(pixel % width), int(pixel / width));
     }
 
-    SaveLUTImage(binaryPattern, LUT, width, "out/_init.png");
-
     int iterationCount = 0;
     while (1)
     {
@@ -426,8 +424,6 @@ static void MakeInitialBinaryPattern(std::vector<bool>& binaryPattern, size_t wi
             break;
     }
     printf("\n");
-
-    SaveBinaryPattern(binaryPattern, width, "out/_LUT_YES", 0, -1, -1, -1, -1);
 }
 
 // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels

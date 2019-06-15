@@ -26,11 +26,14 @@ void TestMask(const std::vector<uint8_t>& noise, size_t noiseSize, const char* b
 {
     std::vector<uint8_t> thresholdImage(noise.size());
 
-    for (int thresholdValue_ = 0; thresholdValue_ < 256; ++thresholdValue_)
-    //for (size_t testIndex = 0; testIndex < THRESHOLD_SAMPLES(); ++testIndex)
+    for (size_t testIndex = 0; testIndex < THRESHOLD_SAMPLES(); ++testIndex)
     {
-        //float percent = float(testIndex + 1) / float(THRESHOLD_SAMPLES() + 1);
-        uint8_t thresholdValue = uint8_t(thresholdValue_);// FromFloat<uint8_t>(percent);
+        float percent = float(testIndex) / float(THRESHOLD_SAMPLES() - 1);
+        uint8_t thresholdValue = FromFloat<uint8_t>(percent);
+        if (thresholdValue == 0)
+            thresholdValue = 1;
+        else if (thresholdValue == 255)
+            thresholdValue = 254;
 
         for (size_t pixelIndex = 0, pixelCount = noise.size(); pixelIndex < pixelCount; ++pixelIndex)
             thresholdImage[pixelIndex] = noise[pixelIndex] > thresholdValue ? 255 : 0;
@@ -71,7 +74,6 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
-    /*
     // generate some white noise
     {
         ScopedTimer timer("White noise");
@@ -108,7 +110,6 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/redHPF");
     }
-    */
 
     // generate blue noise using void and cluster
     {
@@ -138,14 +139,6 @@ int main(int argc, char** argv)
         TestNoise(noise, width, "out/blueVC_2_");
     }
 
-    // TODO: profile and multithread void and cluster? see how it compares to paniq's timing!
-    // TODO: paniq was like 30s for 256x256. V & C is like 110 seconds. his is parallelizable, V & C isn't.
-    // TODO: make void and cluster thing be bigger
-
-    // TODO: temp!
-    system("pause");
-    return 0;
-
     // generate blue noise by using paniq's technique
     {
         ScopedTimer timer("Blue noise by paniq");
@@ -159,7 +152,7 @@ int main(int argc, char** argv)
         TestNoise(noise, c_width, "out/bluePaniq");
     }
 
-    // generate blue noise by using paniq's technique
+    // generate red noise by using paniq's technique
     {
         ScopedTimer timer("Red noise by paniq");
 
@@ -171,6 +164,10 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/redPaniq");
     }
+
+    // TODO: temp!
+    //system("pause");
+    //return 0;
 
     // generate blue noise by swapping white noise pixels to make it more blue
     {
