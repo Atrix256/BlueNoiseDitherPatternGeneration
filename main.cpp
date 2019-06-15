@@ -77,192 +77,224 @@ int main(int argc, char** argv)
 {
     // generate some white noise
     {
-        ScopedTimer timer("White noise");
-
         static size_t c_width = 256;
 
-        std::mt19937 rng(GetRNGSeed());
         std::vector<uint8_t> noise;
-        MakeWhiteNoise(rng, noise, c_width);
+        std::mt19937 rng(GetRNGSeed());
+
+        {
+            ScopedTimer timer("White noise");
+            MakeWhiteNoise(rng, noise, c_width);
+        }
 
         TestNoise(noise, c_width, "out/white");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
     {
-        ScopedTimer timer("Blue noise by high pass filtering white noise");
-
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_HPF(noise, c_width);
+
+        {
+            ScopedTimer timer("Blue noise by high pass filtering white noise");
+            GenerateBN_HPF(noise, c_width);
+        }
 
         TestNoise(noise, c_width, "out/blueHPF");
     }
 
     // generate red noise by repeated low pass filtering white noise and fixing up the histogram
     {
-        ScopedTimer timer("Red noise by low pass filtering white noise");
-
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_HPF(noise, c_width, 5, 1.0f, true);
+
+        {
+            ScopedTimer timer("Red noise by low pass filtering white noise");
+            GenerateBN_HPF(noise, c_width, 5, 1.0f, true);
+        }
 
         TestNoise(noise, c_width, "out/redLPF");
     }
 
     // generate blue noise using void and cluster
     {
-        ScopedTimer timer("Blue noise by void and cluster");
-
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, false, "out/blueVC_1");
+
+        {
+            ScopedTimer timer("Blue noise by void and cluster");
+            GenerateBN_Void_Cluster(noise, c_width, false, "out/blueVC_1");
+        }
+
         TestNoise(noise, c_width, "out/blueVC_1");
     }
 
     // generate blue noise using void and cluster but using mitchell's best candidate instead of initial binary pattern and phase 1
     {
-        ScopedTimer timer("Blue noise by void and cluster with Mitchells best candidate");
-
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Void_Cluster(noise, c_width, true, "out/blueVC_1M");
+        
+        {
+            ScopedTimer timer("Blue noise by void and cluster with Mitchells best candidate");
+            GenerateBN_Void_Cluster(noise, c_width, true, "out/blueVC_1M");
+        }
+
         TestNoise(noise, c_width, "out/blueVC_1M");
     }
 
     // load a blue noise texture
     {
-        ScopedTimer timer("Blue noise by void and cluster from loading the texture");
-
         int width, height, channels;
-        uint8_t* image = stbi_load("bluenoise256.png", &width, &height, &channels, 0);
 
         std::vector<uint8_t> noise;
-        noise.reserve(width*height);
-        for (int i = 0; i < width*height; ++i)
-            noise.push_back(image[i*channels]);
 
-        stbi_image_free(image);
+        {
+            ScopedTimer timer("Blue noise by void and cluster from loading the texture");
+            uint8_t* image = stbi_load("bluenoise256.png", &width, &height, &channels, 0);
+
+            noise.reserve(width*height);
+            for (int i = 0; i < width*height; ++i)
+                noise.push_back(image[i*channels]);
+
+            stbi_image_free(image);
+        }
 
         TestNoise(noise, width, "out/blueVC_2");
     }
 
     // generate blue noise by using paniq's first technique
     {
-        ScopedTimer timer("Blue noise by paniq");
-
         static size_t c_width = 256;
         static size_t c_iterations = 120;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Paniq(noise, c_width, c_iterations, true);
+
+        {
+            ScopedTimer timer("Blue noise by paniq");
+            GenerateBN_Paniq(noise, c_width, c_iterations, true);
+        }
 
         TestNoise(noise, c_width, "out/bluePaniq");
     }
 
     // generate red noise by using paniq's first technique
     {
-        ScopedTimer timer("Red noise by paniq");
 
         static size_t c_width = 256;
         static size_t c_iterations = 120;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Paniq(noise, c_width, c_iterations, false);
+
+        {
+            ScopedTimer timer("Red noise by paniq");
+            GenerateBN_Paniq(noise, c_width, c_iterations, false);
+        }
 
         TestNoise(noise, c_width, "out/redPaniq");
     }
 
     // generate blue noise by using paniq's second technique
     {
-        ScopedTimer timer("Blue noise by paniq2");
-
         static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Paniq2(noise, c_width);
+        {
+            ScopedTimer timer("Blue noise by paniq2");
+            GenerateBN_Paniq2(noise, c_width);
+        }
 
         TestNoise(noise, c_width, "out/bluePaniq2");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue
     {
-        ScopedTimer timer("Blue noise by swapping white noise");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1, false, true);
+
+        {
+            ScopedTimer timer("Blue noise by swapping white noise");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap1.data.csv", true, 0.0f, 1, false, true);
+        }
 
         TestNoise(noise, c_width, "out/blueSwap1");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue. 1-5 swaps
     {
-        ScopedTimer timer("Blue noise by swapping white noise. 1-5 swaps.");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5, false, true);
+        {
+            ScopedTimer timer("Blue noise by swapping white noise. 1-5 swaps.");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap5.data.csv", true, 0.0f, 5, false, true);
+        }
 
         TestNoise(noise, c_width, "out/blueSwap5");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue. 1-10 swaps
     {
-        ScopedTimer timer("Blue noise by swapping white noise. 1-10 swaps.");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10, false, true);
+
+        {
+            ScopedTimer timer("Blue noise by swapping white noise. 1-10 swaps.");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwap10.data.csv", true, 0.0f, 10, false, true);
+        }
 
         TestNoise(noise, c_width, "out/blueSwap10");
     }
 
     // generate red noise by swapping white noise pixels to make it more red. 1-10 swaps
     {
-        ScopedTimer timer("Red noise by swapping white noise. 1-10 swaps.");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/redSwap10.data.csv", true, 0.0f, 10, false, false);
+
+        {
+            ScopedTimer timer("Red noise by swapping white noise. 1-10 swaps.");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/redSwap10.data.csv", true, 0.0f, 10, false, false);
+        }
 
         TestNoise(noise, c_width, "out/redSwap10");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with Simulated Annealing
     {
-        ScopedTimer timer("Blue noise by swapping white noise - with SA");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1, false, true);
+
+        {
+            ScopedTimer timer("Blue noise by swapping white noise - with SA");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapSA.data.csv", true, 0.99f, 1, false, true);
+        }
 
         TestNoise(noise, c_width, "out/blueSwapSA");
     }
 
     // generate blue noise by swapping white noise pixels to make it more blue - with metropolis algorithm and 1-10 swaps
     {
-        ScopedTimer timer("Blue noise by swapping white noise - with metropolis and 1-10 swaps");
-
         static size_t c_width = 32;
         static size_t c_numSwaps = 4096;
 
         std::vector<uint8_t> noise;
-        GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapMet.data.csv", true, 1.0f, 10, false, true);
+
+        {
+            ScopedTimer timer("Blue noise by swapping white noise - with metropolis and 1-10 swaps");
+            GenerateBN_Swap(noise, c_width, c_numSwaps, "out/blueSwapMet.data.csv", true, 1.0f, 10, false, true);
+        }
 
         TestNoise(noise, c_width, "out/blueSwapMet");
     }
