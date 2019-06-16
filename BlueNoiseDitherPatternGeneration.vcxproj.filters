@@ -9,6 +9,7 @@
     <ClCompile Include="generatebn_paniq.cpp" />
     <ClCompile Include="generatebn_void_cluster.cpp" />
     <ClCompile Include="generatebn_paniq2.cpp" />
+    <ClCompile Include="generatebn_frs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="simple_fft\check_fft.hpp">
@@ -53,6 +54,7 @@
     </ClInclude>
     <ClInclude Include="generatebn_paniq2.h" />
     <ClInclude Include="vec.h" />
+    <ClInclude Include="generatebn_frs.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="simple_fft">

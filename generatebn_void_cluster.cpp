@@ -541,32 +541,36 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool
 {
     std::mt19937 rng(GetRNGSeed());
 
-    std::vector<bool> initialBinaryPattern;
     std::vector<size_t> ranks(width*width, ~size_t(0));
+
+    std::vector<bool> initialBinaryPattern;
     std::vector<bool> binaryPattern;
+    std::vector<float> initialLUT;
     std::vector<float> LUT;
 
     if (!useMitchellsBestCandidate)
     {
-        // make the initial binary pattern
+        // make the initial binary pattern and initial LUT
         MakeInitialBinaryPattern(initialBinaryPattern, width, baseFileName, rng);
+        MakeLUT(initialBinaryPattern, initialLUT, width, true);
 
         // Phase 1: Start with initial binary pattern and remove the tightest cluster until there are none left, entering ranks for those pixels
         binaryPattern = initialBinaryPattern;
-        MakeLUT(binaryPattern, LUT, width, true);
+        LUT = initialLUT;
         Phase1(binaryPattern, LUT, ranks, width, rng, baseFileName);
     }
     else
     {
-        // replace initial binary pattern and phase 1 with Mitchell's best candidate algorithm
+        // replace initial binary pattern and phase 1 with Mitchell's best candidate algorithm, and then making the LUT
         MitchellsBestCandidate(initialBinaryPattern, ranks, width);
+        MakeLUT(initialBinaryPattern, initialLUT, width, true);
 
         //SaveBinaryPattern(initialBinaryPattern, width, "out/_blah", 0, -1, -1, -1, -1);
     }
 
     // Phase 2: Start with initial binary pattern and add points to the largest void until half the pixels are white, entering ranks for those pixels
     binaryPattern = initialBinaryPattern;
-    MakeLUT(binaryPattern, LUT, width, true);
+    LUT = initialLUT;
     Phase2(binaryPattern, LUT, ranks, width, rng);
 
     // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
@@ -581,7 +585,3 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool
             blueNoise[index] = uint8_t(ranks[index] * 256 / (width*width));
     }
 }
-
-// TODO: retest speed and quality vs mitchell's best candidate. maybe run both?  it was like 3400 seconds vs 4100 seconds. rerun and get exact numbers!
-// Compare quality too. if there's ANY less quality would want to avoid it probably though.
-// thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12

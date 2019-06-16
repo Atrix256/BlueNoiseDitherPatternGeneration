@@ -6,6 +6,7 @@
 
 #include "convert.h"
 #include "dft.h"
+#include "generatebn_frs.h"
 #include "generatebn_hpf.h"
 #include "generatebn_paniq.h"
 #include "generatebn_paniq2.h"
@@ -88,6 +89,20 @@ int main(int argc, char** argv)
         }
 
         TestNoise(noise, c_width, "out/white");
+    }
+
+    // generate blue noise by forced random sampling
+    {
+        static size_t c_width = 256;
+
+        std::vector<uint8_t> noise;
+
+        {
+            ScopedTimer timer("Blue noise by using forced random sampling algorithm");
+            GenerateBN_FRS(noise, c_width);
+        }
+
+        TestNoise(noise, c_width, "out/blueFRS");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
@@ -305,6 +320,8 @@ int main(int argc, char** argv)
 }
 
 /*
+
+can FRS be used to make red noise? i bet so. try it!
 
 thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
 
