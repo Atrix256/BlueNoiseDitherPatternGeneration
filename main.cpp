@@ -76,6 +76,7 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
+    /*
     // generate some white noise
     {
         static size_t c_width = 256;
@@ -90,19 +91,34 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/white");
     }
+    */
 
     // generate blue noise by forced random sampling
     {
-        static size_t c_width = 256;
+        static size_t c_width = 64;  // TODO: make 256
 
         std::vector<uint8_t> noise;
 
         {
             ScopedTimer timer("Blue noise by using forced random sampling algorithm");
-            GenerateBN_FRS(noise, c_width);
+            GenerateBN_FRS(noise, c_width, true);
         }
 
         TestNoise(noise, c_width, "out/blueFRS");
+    }
+
+    // generate red noise by forced random sampling
+    {
+        static size_t c_width = 64;  // TODO: make 256
+
+        std::vector<uint8_t> noise;
+
+        {
+            ScopedTimer timer("Red noise by using forced random sampling algorithm");
+            GenerateBN_FRS(noise, c_width, false);
+        }
+
+        TestNoise(noise, c_width, "out/redFRS");
     }
 
     // generate blue noise by repeated high pass filtering white noise and fixing up the histogram
