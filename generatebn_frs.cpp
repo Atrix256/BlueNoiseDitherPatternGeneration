@@ -116,7 +116,6 @@ void GenerateBN_FRS(
 
     printf("\n");
 }
-// TODO: V&C might benefit from using omp to write to the LUT. try it!
 
 // Note: optimized by using a LUT, like void and cluster. also uses OMP to write to the LUT multithreadedly.
 // NOTE: i tried getting rid of the shuffle by generating 1 bit per item that said whether it should be taken or not.

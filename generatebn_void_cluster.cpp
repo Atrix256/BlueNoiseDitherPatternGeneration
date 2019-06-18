@@ -148,7 +148,8 @@ static bool FindLargestVoidLUT(const std::vector<float>& LUT, const std::vector<
 
 static void WriteLUTValue(std::vector<float>& LUT, size_t width, bool value, int basex, int basey)
 {
-    for (size_t y = 0; y < width; ++y)
+    #pragma omp parallel for
+    for (int y = 0; y < width; ++y)
     {
         float disty = abs(float(y) - float(basey));
         if (disty > float(width / 2))
@@ -571,6 +572,7 @@ void GenerateBN_Void_Cluster(std::vector<uint8_t>& blueNoise, size_t width, bool
     Phase2(binaryPattern, LUT, ranks, width, rng);
 
     // Phase 3: Continue with the last binary pattern, repeatedly find the tightest cluster of 0s and insert a 1 into them
+    // Note: we do need to re-make the LUT, because we are writing 0s instead of 1s
     MakeLUT(binaryPattern, LUT, width, false);
     Phase3(binaryPattern, LUT, ranks, width, rng);
 
