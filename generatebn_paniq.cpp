@@ -3,9 +3,6 @@
 #include "whitenoise.h"
 #include "vec.h"
 
-#include <thread>
-#include <atomic>
-
 #define R2 19
 #define SIGMA 1.414f
 #define M_PI 3.14159265359f
@@ -145,43 +142,21 @@ void GenerateBN_Paniq(
         std::swap(noise, noise2);
 
         // run the pixel shader per pixel
-        // split the work among however many threads are available
-        std::vector<std::thread> threads;
-        threads.resize(std::thread::hardware_concurrency());
-        std::atomic<size_t> atomicrow(0);
-        for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
+        #pragma omp parallel for
+        for (int iy = 0; iy < width; ++iy)
         {
-            threads[threadIndex] = std::thread(
-                [width, iteration, makeBlueNoise, &atomicrow, &noise, &noise2]()
-                {
-                    // get first row to process
-                    size_t row = atomicrow.fetch_add(1);
+            float* dest = &noise2[iy*width];
 
-                    // process rows until we run out
-                    while (row < width)
-                    {
-                        float* dest = &noise2[row*width];
-
-                        for (size_t ix = 0; ix < width; ++ix)
-                        {
-                            float pixelOut;
-                            if(makeBlueNoise)
-                                mainImage<true>(pixelOut, vec2{ float(ix), float(row) }, ivec2{ int(width), int(width) }, iteration, noise, width);
-                            else
-                                mainImage<false>(pixelOut, vec2{ float(ix), float(row) }, ivec2{ int(width), int(width) }, iteration, noise, width);
-                            dest[ix] = pixelOut;
-                        }
-
-                        // go to the next row
-                        row = atomicrow.fetch_add(1);
-                    }
-                }
-            );
+            for (size_t ix = 0; ix < width; ++ix)
+            {
+                float pixelOut;
+                if(makeBlueNoise)
+                    mainImage<true>(pixelOut, vec2{ float(ix), float(iy) }, ivec2{ int(width), int(width) }, iteration, noise, width);
+                else
+                    mainImage<false>(pixelOut, vec2{ float(ix), float(iy) }, ivec2{ int(width), int(width) }, iteration, noise, width);
+                dest[ix] = pixelOut;
+            }
         }
-
-        // wait for all threads to be done
-        for (std::thread& t : threads)
-            t.join();
     }
     printf("\n");
 

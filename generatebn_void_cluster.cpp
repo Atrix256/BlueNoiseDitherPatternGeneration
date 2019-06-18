@@ -6,9 +6,6 @@
 #include "stb/stb_image_write.h"
 #include "scoped_timer.h"
 
-#include <thread>
-#include <atomic>
-
 static const float c_sigma = 1.9f;// 1.5f;
 static const float c_2sigmaSquared = 2.0f * c_sigma * c_sigma;
 static const int c_3sigmaint = int(ceil(c_sigma * 3.0f));

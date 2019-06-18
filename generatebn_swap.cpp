@@ -2,9 +2,6 @@
 #include "generatebn_swap.h"
 #include "whitenoise.h"
 
-#include <thread>
-#include <atomic>
-
 inline float ToroidalDistanceSquared(float x1, float y1, float x2, float y2, float width)
 {
     float dx = std::abs(x2 - x1);
@@ -28,106 +25,84 @@ float CalculateEnergy(const std::vector<float>& pixels, size_t width)
     static const int c_3Sigma_i = int(Clamp<size_t>(0, width / 2 - 1, size_t(ceil(c_sigma_i*3.0f))));
 
     size_t pixelCount = width * width;
-
-    std::vector<std::thread> threads;
-    threads.resize(std::thread::hardware_concurrency());
-    std::atomic<size_t> atomicrow(0);
+ 
+    // process rows until we run out
     std::vector<float> energies(width, 0.0f);
-
-    // split the work among however many threads are available
-    for (size_t threadIndex = 0; threadIndex < threads.size(); ++threadIndex)
+    #pragma omp parallel for
+    for (int row = 0; row < width; ++row)
     {
-        threads[threadIndex] = std::thread(
-            [pixelCount, width, &atomicrow, &pixels, &energies]()
+        // for each pixel in this row...
+        for (size_t column = 0; column < width; ++column)
+        {
+            size_t p = row * width + column;
+
+            float px = float(p % width);
+            float py = float(p / width);
+            float pvalue = pixels[p];
+
+            // limit it to +/- 3 standard deviations which is 99.7% of the data
+            if (LIMITTO3SIGMA)
             {
-                // get first row to process
-                size_t row = atomicrow.fetch_add(1);
-
-                // process rows until we run out
-                while (row < width)
+                for (int oy = -c_3Sigma_i; oy <= c_3Sigma_i; ++oy)
                 {
-                    // for each pixel in this row...
-                    for (size_t column = 0; column < width; ++column)
+                    float qy = py + float(oy);
+
+                    int qyi = int(qy);
+                    if (qyi < 0)
+                        qyi += int(width);
+                    qyi = qyi % width;
+
+                    for (int ox = -c_3Sigma_i; ox <= c_3Sigma_i; ++ox)
                     {
-                        size_t p = row * width + column;
+                        float qx = px + float(ox);
 
-                        float px = float(p % width);
-                        float py = float(p / width);
-                        float pvalue = pixels[p];
+                        int qxi = int(qx);
+                        if (qxi < 0)
+                            qxi += int(width);
+                        qxi = qxi % width;
 
-                        // limit it to +/- 3 standard deviations which is 99.7% of the data
-                        if (LIMITTO3SIGMA)
-                        {
-                            for (int oy = -c_3Sigma_i; oy <= c_3Sigma_i; ++oy)
-                            {
-                                float qy = py + float(oy);
+                        float qvalue = pixels[qyi*width + qxi];
 
-                                int qyi = int(qy);
-                                if (qyi < 0)
-                                    qyi += int(width);
-                                qyi = qyi % width;
+                        float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
 
-                                for (int ox = -c_3Sigma_i; ox <= c_3Sigma_i; ++ox)
-                                {
-                                    float qx = px + float(ox);
+                        float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
 
-                                    int qxi = int(qx);
-                                    if (qxi < 0)
-                                        qxi += int(width);
-                                    qxi = qxi % width;
+                        float d = 1.0f;
+                        float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
 
-                                    float qvalue = pixels[qyi*width + qxi];
+                        float energy = exp(-leftTerm - rightTerm);
 
-                                    float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
-
-                                    float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
-
-                                    float d = 1.0f;
-                                    float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
-
-                                    float energy = exp(-leftTerm - rightTerm);
-
-                                    energies[row] += energy;
-                                    // TODO: when supporting multiple channel blue noise, right term needs treatment
-                                }
-                            }
-                        }
-                        else
-                        {
-                            for (size_t q = 0; q < pixelCount; ++q)
-                            {
-                                if (p == q)
-                                    continue;
-
-                                float qx = float(q % width);
-                                float qy = float(q / width);
-                                float qvalue = pixels[q];
-
-                                float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
-
-                                float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
-
-                                float d = 1.0f;
-                                float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
-
-                                float energy = exp(-leftTerm - rightTerm);
-
-                                energies[row] += energy;
-                                // TODO: when supporting multiple channel blue noise, right term needs treatment
-                            }
-                        }
+                        energies[row] += energy;
+                        // TODO: when supporting multiple channel blue noise, right term needs treatment
                     }
-
-                    // get next row to process
-                    row = atomicrow.fetch_add(1);
                 }
             }
-        );
-    }
+            else
+            {
+                for (size_t q = 0; q < pixelCount; ++q)
+                {
+                    if (p == q)
+                        continue;
 
-    // wait for all threads to be done
-    for (std::thread& t : threads)
-        t.join();
+                    float qx = float(q % width);
+                    float qy = float(q / width);
+                    float qvalue = pixels[q];
+
+                    float distanceSquared = ToroidalDistanceSquared(px, py, qx, qy, float(width));
+
+                    float leftTerm = (distanceSquared) / (c_sigma_i * c_sigma_i);
+
+                    float d = 1.0f;
+                    float rightTerm = (powf(std::abs(qvalue - pvalue), d / 2.0f)) / (c_sigma_s * c_sigma_s);
+
+                    float energy = exp(-leftTerm - rightTerm);
+
+                    energies[row] += energy;
+                    // TODO: when supporting multiple channel blue noise, right term needs treatment
+                }
+            }
+        }
+    }
 
     // return the sum of all energies
     float energySum = 0.0f;

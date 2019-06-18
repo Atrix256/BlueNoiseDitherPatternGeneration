@@ -76,7 +76,6 @@ void TestNoise(const std::vector<uint8_t>& noise, size_t noiseSize, const char* 
 
 int main(int argc, char** argv)
 {
-    /*
     // generate some white noise
     {
         static size_t c_width = 256;
@@ -91,11 +90,10 @@ int main(int argc, char** argv)
 
         TestNoise(noise, c_width, "out/white");
     }
-    */
 
     // generate blue noise by forced random sampling
     {
-        static size_t c_width = 64;  // TODO: make 256
+        static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
 
@@ -109,7 +107,7 @@ int main(int argc, char** argv)
 
     // generate red noise by forced random sampling
     {
-        static size_t c_width = 64;  // TODO: make 256
+        static size_t c_width = 256;
 
         std::vector<uint8_t> noise;
 
@@ -337,11 +335,9 @@ int main(int argc, char** argv)
 
 /*
 
-can FRS be used to make red noise? i bet so. try it!
-
 thanks to mikkel for this: https://twitter.com/atrix256/status/1136391416395980800?s=12
 
-* maybe could multithread LUT writing & generation since not doing DFT/IDFT?
+* V&C: maybe could multithread LUT writing & generation since not doing DFT/IDFT?
  * could maybe do DFT/IDFT??!
 
 
