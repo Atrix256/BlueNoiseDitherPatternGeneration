@@ -208,6 +208,7 @@ void GenerateBN_Swap(
     printf("\n");
 }
 
+// TODO: could probably use a LUT to speed this up.
 // TODO: could use SIMD for this... that other code does and it seems to run faster. Or put it in notes that it could be improved that way.
 
 // TODO: support multichannel blue noise?
